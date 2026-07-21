@@ -19,7 +19,6 @@ svg{display:block}
 .w-fit{width:fit-content}
 .w-10{width:2.5rem}
 .h-10{height:2.5rem}
-.h-96{height:24rem}
 .max-w-md{max-width:28rem}
 .block{display:block}
 .flex{display:flex}
@@ -52,8 +51,6 @@ svg{display:block}
 .gap-1{gap:.25rem}
 .space-y-2>*+*{margin-top:.5rem}
 .space-y-0\.5>*+*{margin-top:.125rem}
-.absolute{position:absolute}
-.inset-0{top:0;right:0;bottom:0;left:0}
 .self-start{align-self:flex-start}
 .rounded-full{border-radius:9999px}
 .rounded-2xl{border-radius:1rem}
@@ -347,7 +344,7 @@ function App() {
   const [descMode, setDescMode] = useState("kid");
   const [appMode, setAppMode] = useState("explore");
   const [selectedId, setSelectedId] = useState(null);
-  const [flipped, setFlipped] = useState(false);
+  const [cardView, setCardView] = useState("info");
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [viewerId, setViewerId] = useState(null);
@@ -387,7 +384,7 @@ function App() {
   }, [isPlaying, positioned]);
 
   function resetAll() {
-    setSelectedId(null); setFlipped(false); setPhaseIndex(0); setIsPlaying(false);
+    setSelectedId(null); setCardView("info"); setPhaseIndex(0); setIsPlaying(false);
     setViewerId(null); setDragPos(null); setDragging(false); setResult(null); setTrails([]); setBallKick(false);
   }
 
@@ -400,7 +397,7 @@ function App() {
   function pickFormation(key) { setFormationKey(key); resetAll(); }
 
   function switchAppMode(m) {
-    setAppMode(m); setIsPlaying(false); setDragPos(null); setResult(null); setSelectedId(null); setFlipped(false);
+    setAppMode(m); setIsPlaying(false); setDragPos(null); setResult(null); setSelectedId(null); setCardView("info");
   }
 
   function goToPhase(i) {
@@ -413,7 +410,13 @@ function App() {
 
   function tapPlayer(id) {
     if (appMode !== "explore") return;
-    if (id === selectedId) { setFlipped((f) => !f); } else { setSelectedId(id); setFlipped(false); }
+    setSelectedId(id);
+    setCardView("info");
+  }
+
+  function closeCard() {
+    setSelectedId(null);
+    setCardView("info");
   }
 
   function toYs(y) { return (y / 100) * 132; }
@@ -452,11 +455,6 @@ function App() {
 
   return React.createElement("div", { className: "min-h-screen w-full bg-[#F7F5EF] flex flex-col items-center px-4 py-8" },
     React.createElement("style", null, `
-      .card-flip-scene { perspective: 1200px; }
-      .card-flip-inner { position: relative; width: 100%; transition: transform 0.55s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
-      .card-flip-inner.flipped { transform: rotateY(180deg); }
-      .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-      .card-face-back { position: absolute; inset: 0; transform: rotateY(180deg); }
       .player-dot { transition: cx 0.7s cubic-bezier(.4,0,.2,1), cy 0.7s cubic-bezier(.4,0,.2,1), r 0.25s ease; }
       .player-label { transition: x 0.7s cubic-bezier(.4,0,.2,1), y 0.7s cubic-bezier(.4,0,.2,1); }
       .pass-line { transition: x1 0.7s cubic-bezier(.4,0,.2,1), y1 0.7s cubic-bezier(.4,0,.2,1), x2 0.7s cubic-bezier(.4,0,.2,1), y2 0.7s cubic-bezier(.4,0,.2,1); }
@@ -467,6 +465,11 @@ function App() {
       .ball-wrap { transition: transform 0.9s cubic-bezier(.4,0,.2,1); }
       .ball-kick { animation: ballKick 0.4s ease-out; }
       @keyframes ballKick { 0% { font-size: 8px; } 40% { font-size: 12px; } 100% { font-size: 8px; } }
+      .backdrop { position: fixed; inset: 0; background: rgba(22,35,58,0.55); z-index: 40; animation: fadeIn 0.2s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      .popup-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; pointer-events: none; }
+      .popup-card { pointer-events: auto; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; border-radius: 20px; animation: popIn 0.22s cubic-bezier(.2,.9,.3,1.2); }
+      @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     `),
     React.createElement("div", { className: "w-full max-w-md text-center mb-5" },
       React.createElement("p", { className: "uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1" }, gameSize + " Position Guide"),
@@ -626,44 +629,43 @@ function App() {
         })
       )
     ),
-    appMode === "explore" && React.createElement("div", { className: "w-full max-w-md mt-5" },
-      !selected ? React.createElement("div", { className: "flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6" },
+    appMode === "explore" && !selected && React.createElement("div", { className: "w-full max-w-md mt-5" },
+      React.createElement("div", { className: "flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6" },
         React.createElement("span", null, "👆"),
         React.createElement("span", null, "Tap any numbered player above to start.")
-      ) : React.createElement("div", { className: "card-flip-scene h-96" },
-        React.createElement("div", { className: "card-flip-inner h-full " + (flipped ? "flipped" : "") },
-          React.createElement("div", {
-            className: "card-face absolute inset-0 rounded-2xl p-5 flex flex-col justify-between text-white shadow-xl overflow-y-auto",
-            style: { background: "linear-gradient(155deg, " + ZONE_COLOR[selectedRole.zone] + ", #16233A)" }
-          },
-            React.createElement("div", { className: "flex justify-between items-start" },
-              React.createElement("div", null,
-                React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-70" }, ZONE_LABEL[selectedRole.zone]),
-                React.createElement("h2", { className: "text-2xl font-black tracking-tight" }, selectedRole.label)
-              ),
-              React.createElement("span", { className: "text-4xl font-black opacity-80" }, "#" + selected.number)
-            ),
+      )
+    ),
+    appMode === "explore" && selected && React.createElement(React.Fragment, null,
+      React.createElement("div", { className: "backdrop", onClick: closeCard }),
+      React.createElement("div", { className: "popup-wrap" },
+        React.createElement("div", {
+          className: "popup-card p-5 shadow-xl",
+          style: cardView === "info"
+            ? { background: "linear-gradient(155deg, " + ZONE_COLOR[selectedRole.zone] + ", #16233A)", color: "white" }
+            : { background: "#F7F5EF", color: "#16233A", border: "2px solid " + ZONE_COLOR[selectedRole.zone] }
+        },
+          React.createElement("div", { className: "flex justify-between items-start mb-2" },
+            React.createElement("button", { onClick: closeCard, className: "text-xs uppercase tracking-wide opacity-60" }, "✕ Close"),
+            React.createElement("span", { className: "text-2xl font-black opacity-80" }, "#" + selected.number)
+          ),
+          cardView === "info" ? React.createElement(React.Fragment, null,
+            React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-70" }, ZONE_LABEL[selectedRole.zone]),
+            React.createElement("h2", { className: "text-2xl font-black tracking-tight mb-2" }, selectedRole.label),
             React.createElement("div", { className: "space-y-2" },
               React.createElement("p", { className: "text-sm leading-snug" }, descMode === "kid" ? selectedRole.kidDesc : selectedRole.coachNote),
               React.createElement("p", { className: "text-sm leading-snug font-medium" }, descMode === "kid" ? selectedRole.kidJob : selectedRole.watchFor),
               React.createElement("p", { className: "text-xs leading-snug italic opacity-80 border-t border-white/20 pt-2" }, "Right now: " + PHASE_REASON[phase][selected.role])
             ),
-            React.createElement("button", { onClick: () => setFlipped(true), className: "self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5" }, "↻ Flip card")
-          ),
-          React.createElement("div", {
-            className: "card-face card-face-back rounded-2xl p-5 flex flex-col justify-between text-[#16233A] shadow-xl border-2 overflow-y-auto",
-            style: { background: "#F7F5EF", borderColor: ZONE_COLOR[selectedRole.zone] }
-          },
-            React.createElement("div", null,
-              React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-60" }, "Watch for"),
-              React.createElement("p", { className: "text-base font-semibold leading-snug mt-1" }, selectedRole.watchFor)
-            ),
-            React.createElement("div", { className: "text-xs text-[#16233A]/60 space-y-0.5" },
+            React.createElement("button", { onClick: () => setCardView("back"), className: "mt-3 self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5" }, "Show watch-for tip →")
+          ) : React.createElement(React.Fragment, null,
+            React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-60" }, "Watch for"),
+            React.createElement("p", { className: "text-base font-semibold leading-snug mt-1 mb-3" }, selectedRole.watchFor),
+            React.createElement("div", { className: "text-xs opacity-60 space-y-0.5 mb-3" },
               React.createElement("p", null, "Formation: " + formationKey),
               React.createElement("p", null, "Zone: " + ZONE_LABEL[selectedRole.zone]),
               React.createElement("p", null, "Jersey #" + selected.number)
             ),
-            React.createElement("button", { onClick: () => setFlipped(false), className: "self-start text-xs uppercase tracking-wide bg-[#16233A]/10 rounded-full px-3 py-1.5" }, "↻ Back")
+            React.createElement("button", { onClick: () => setCardView("info"), className: "self-start text-xs uppercase tracking-wide bg-[#16233A]/10 rounded-full px-3 py-1.5" }, "← Back to role info")
           )
         )
       )
