@@ -4,10 +4,108 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Know Your Spot — 7v7 Position Guide</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin="anonymous"></script>
+<style>
+.min-h-screen{min-height:100vh}
+.w-full{width:100%}
+.w-fit{width:fit-content}
+.w-10{width:2.5rem}
+.h-10{height:2.5rem}
+.h-60{height:15rem}
+.max-w-md{max-width:28rem}
+.block{display:block}
+.flex{display:flex}
+.flex-col{flex-direction:column}
+.grid{display:grid}
+.grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.items-center{align-items:center}
+.items-start{align-items:flex-start}
+.justify-center{justify-content:center}
+.justify-between{justify-content:space-between}
+.flex-wrap{flex-wrap:wrap}
+.px-4{padding-left:1rem;padding-right:1rem}
+.py-8{padding-top:2rem;padding-bottom:2rem}
+.px-3{padding-left:.75rem;padding-right:.75rem}
+.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}
+.py-1{padding-top:.25rem;padding-bottom:.25rem}
+.p-1{padding:.25rem}
+.p-4{padding:1rem}
+.p-5{padding:1.25rem}
+.p-2{padding:.5rem}
+.pt-2{padding-top:.5rem}
+.mb-5{margin-bottom:1.25rem}
+.mb-1{margin-bottom:.25rem}
+.mt-1{margin-top:.25rem}
+.mb-4{margin-bottom:1rem}
+.mb-3{margin-bottom:.75rem}
+.mb-2{margin-bottom:.5rem}
+.mt-5{margin-top:1.25rem}
+.gap-2{gap:.5rem}
+.gap-1{gap:.25rem}
+.space-y-2>*+*{margin-top:.5rem}
+.space-y-0\.5>*+*{margin-top:.125rem}
+.absolute{position:absolute}
+.inset-0{top:0;right:0;bottom:0;left:0}
+.self-start{align-self:flex-start}
+.rounded-full{border-radius:9999px}
+.rounded-2xl{border-radius:1rem}
+.rounded-lg{border-radius:.5rem}
+.rounded-xl{border-radius:.75rem}
+.border{border-width:1px;border-style:solid;border-color:transparent}
+.border-2{border-width:2px;border-style:solid;border-color:transparent}
+.border-4{border-width:4px;border-style:solid;border-color:transparent}
+.border-t{border-top-width:1px;border-top-style:solid}
+.shadow-lg{box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1)}
+.shadow-xl{box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1)}
+.text-xs{font-size:.75rem;line-height:1rem}
+.text-sm{font-size:.875rem;line-height:1.25rem}
+.text-base{font-size:1rem;line-height:1.5rem}
+.text-2xl{font-size:1.5rem;line-height:2rem}
+.text-4xl{font-size:2.25rem;line-height:2.5rem}
+.font-bold{font-weight:700}
+.font-semibold{font-weight:600}
+.font-medium{font-weight:500}
+.font-black{font-weight:900}
+.uppercase{text-transform:uppercase}
+.tracking-wide{letter-spacing:.025em}
+.tracking-tight{letter-spacing:-.025em}
+.tracking-\[0\.25em\]{letter-spacing:.25em}
+.tracking-\[0\.2em\]{letter-spacing:.2em}
+.italic{font-style:italic}
+.leading-snug{line-height:1.375}
+.text-\[11px\]{font-size:11px}
+.text-center{text-align:center}
+.bg-white{background-color:#fff}
+.bg-\[\#16233A\]{background-color:#16233A}
+.bg-\[\#F7F5EF\]{background-color:#F7F5EF}
+.bg-\[\#C75B39\]{background-color:#C75B39}
+.bg-white\/15{background-color:rgba(255,255,255,.15)}
+.bg-\[\#16233A\]\/10{background-color:rgba(22,35,58,.1)}
+.bg-\[\#C75B39\]\/10{background-color:rgba(199,91,57,.1)}
+.bg-\[\#1F5B3F\]\/10{background-color:rgba(31,91,63,.1)}
+.text-white{color:#fff}
+.text-\[\#16233A\]{color:#16233A}
+.text-\[\#F7F5EF\]{color:#F7F5EF}
+.text-\[\#5B8FA8\]{color:#5B8FA8}
+.text-\[\#16233A\]\/70{color:rgba(22,35,58,.7)}
+.text-\[\#16233A\]\/60{color:rgba(22,35,58,.6)}
+.text-\[\#16233A\]\/50{color:rgba(22,35,58,.5)}
+.text-\[\#1F5B3F\]{color:#1F5B3F}
+.text-\[\#C75B39\]{color:#C75B39}
+.opacity-70{opacity:.7}
+.opacity-80{opacity:.8}
+.opacity-60{opacity:.6}
+.border-\[\#16233A\]\/15{border-color:rgba(22,35,58,.15)}
+.border-\[\#16233A\]\/10{border-color:rgba(22,35,58,.1)}
+.border-white\/20{border-color:rgba(255,255,255,.2)}
+.transition{transition-property:all;transition-duration:.15s}
+.overflow-hidden{overflow:hidden}
+.touch-none{touch-action:none}
+.mx-auto{margin-left:auto;margin-right:auto}
+body{margin:0}
+</style>
 </head>
 <body>
 <script>
@@ -16,7 +114,6 @@ window.onerror = function(msg, url, line, col, error) {
   return true;
 };
 </script>
-
 <div id="app"></div>
 
 <script type="text/babel" data-presets="react">
@@ -227,7 +324,7 @@ function App() {
     setDragging(false);
     const targetX = viewerTarget.x;
     const targetY = toYs(viewerTarget.y);
-    const dist = Math.hypot((dragPos?.x ?? 0) - targetX, (dragPos?.y ?? 0) - targetY);
+    const dist = Math.hypot((dragPos ? dragPos.x : 0) - targetX, (dragPos ? dragPos.y : 0) - targetY);
     if (dist <= 9) {
       setResult("correct"); playTone(880, 180); buzz([40]);
       setTimeout(() => { setDragPos(null); setResult(null); }, 1400);
@@ -238,174 +335,206 @@ function App() {
 
   const viewerNumbers = formation.players.map((p) => p.number);
 
-  return (
-    <div className="min-h-screen w-full bg-[#F7F5EF] flex flex-col items-center px-4 py-8">
-      <style>{`
-        .card-flip-scene { perspective: 1200px; }
-        .card-flip-inner { position: relative; width: 100%; transition: transform 0.55s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
-        .card-flip-inner.flipped { transform: rotateY(180deg); }
-        .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-        .card-face-back { position: absolute; inset: 0; transform: rotateY(180deg); }
-        .player-dot { transition: cx 0.7s cubic-bezier(.4,0,.2,1), cy 0.7s cubic-bezier(.4,0,.2,1), r 0.25s ease; }
-        .player-label { transition: x 0.7s cubic-bezier(.4,0,.2,1), y 0.7s cubic-bezier(.4,0,.2,1); }
-        .pass-line { transition: x1 0.7s cubic-bezier(.4,0,.2,1), y1 0.7s cubic-bezier(.4,0,.2,1), x2 0.7s cubic-bezier(.4,0,.2,1), y2 0.7s cubic-bezier(.4,0,.2,1); }
-        .ghost { animation: ghostFade 0.85s ease-out forwards; }
-        @keyframes ghostFade { from { opacity: 0.35; } to { opacity: 0; } }
-        @keyframes ringPulse { 0% { r: 6; opacity: 0.9; } 100% { r: 11; opacity: 0; } }
-        .ring-pulse { animation: ringPulse 1.1s ease-out infinite; }
-      `}</style>
-
-      <div className="w-full max-w-md text-center mb-5">
-        <p className="uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1">7v7 Position Guide</p>
-        <h1 className="text-4xl font-black text-[#16233A] tracking-tight">KNOW YOUR SPOT</h1>
-        <p className="text-sm text-[#16233A]/70 mt-1">
-          {appMode === "explore" ? "Tap a player for their role. Play a phase to see the team move." : "Pick your number, then drag yourself to the right spot."}
-        </p>
-      </div>
-
-      <div className="w-full max-w-md flex flex-col gap-2 mb-4">
-        <div className="flex gap-2 justify-center">
-          {Object.keys(FORMATIONS).map((key) => (
-            <button key={key} onClick={() => pickFormation(key)} className={`px-3 py-1.5 rounded-full text-sm font-bold tracking-wide transition ${formationKey === key ? "bg-[#16233A] text-[#F7F5EF]" : "bg-white text-[#16233A] border border-[#16233A]/15"}`}>{key}</button>
-          ))}
-        </div>
-        <div className="flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10">
-          {["explore", "test"].map((m) => (
-            <button key={m} onClick={() => switchAppMode(m)} className={`px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition ${appMode === m ? "bg-[#C75B39] text-white" : "text-[#16233A]/60"}`}>{m === "explore" ? "Explore" : "Test Me"}</button>
-          ))}
-        </div>
-        {appMode === "explore" && (
-          <div className="flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10">
-            {["kid", "coach"].map((m) => (
-              <button key={m} onClick={() => setDescMode(m)} className={`px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition ${descMode === m ? "bg-[#16233A] text-white" : "text-[#16233A]/60"}`}>{m === "kid" ? "Kid Mode" : "Coach Mode"}</button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="w-full max-w-md flex flex-col gap-2 mb-3">
-        <div className="grid grid-cols-4 gap-1">
-          {PHASE_ORDER.map((p, i) => (
-            <button key={p} onClick={() => goToPhase(i)} className={`py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition ${phase === p ? "bg-[#C75B39] text-white" : "bg-white text-[#16233A]/60 border border-[#16233A]/10"}`}>{PHASE_META[p].label}</button>
-          ))}
-        </div>
-        {appMode === "explore" && (
-          <div className="flex items-center gap-2 justify-center">
-            <button onClick={() => setIsPlaying((v) => !v)} className="text-xs font-bold uppercase tracking-wide bg-[#16233A] text-white rounded-full px-4 py-1.5">{isPlaying ? "⏸ Pause" : "▶ Play phases"}</button>
-          </div>
-        )}
-        <p className="text-center text-xs text-[#16233A]/50 italic">{PHASE_META[phase].desc}</p>
-      </div>
-
-      {appMode === "test" && !viewerId && (
-        <div className="w-full max-w-md bg-white rounded-2xl p-4 mb-3 border border-[#16233A]/10 text-center">
-          <p className="text-sm font-semibold text-[#16233A] mb-2">Which number are you?</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {viewerNumbers.map((num) => {
-              const p = formation.players.find((pl) => pl.number === num);
-              return (<button key={num} onClick={() => setViewerId(p.id)} className="w-10 h-10 rounded-full bg-[#16233A] text-white font-black">{num}</button>);
-            })}
-          </div>
-        </div>
-      )}
-
-      {appMode === "test" && viewerId && result && (
-        <div className={`w-full max-w-md rounded-xl p-2 mb-2 text-center text-sm font-bold ${result === "correct" ? "bg-[#1F5B3F]/10 text-[#1F5B3F]" : "bg-[#C75B39]/10 text-[#C75B39]"}`}>
-          {result === "correct" ? "✅ That's it! Great spot." : "Not quite — follow the glowing ring."}
-        </div>
-      )}
-
-      <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-lg border-4 border-[#16233A]/10">
-        <svg ref={svgRef} viewBox="0 0 100 132" className="w-full block touch-none" onPointerMove={onDragMove} onPointerUp={onDragEnd}>
-          <defs>
-            <marker id="arrowhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
-              <path d="M0,0 L4,2 L0,4 Z" fill="#16233A" opacity="0.55" />
-            </marker>
-          </defs>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <rect key={i} x="0" y={i * 16.5} width="100" height="16.5" fill={i % 2 === 0 ? "#1F5B3F" : "#255E45"} />
-          ))}
-          {[{ zone: "attack", y0: 0, y1: 44 }, { zone: "midfield", y0: 44, y1: 88 }, { zone: "defense", y0: 88, y1: 132 }].map(({ zone, y0, y1 }) => (
-            <rect key={zone} x="0" y={y0} width="100" height={y1 - y0} fill={ZONE_COLOR[zone]} opacity={selectedRole ? (selectedRole.zone === zone ? 0.2 : 0.03) : 0.07} style={{ transition: "opacity 0.35s" }} />
-          ))}
-          <g stroke="#F7F5EF" strokeWidth="0.6" fill="none" opacity="0.85">
-            <rect x="4" y="4" width="92" height="124" />
-            <line x1="4" y1="66" x2="96" y2="66" />
-            <circle cx="50" cy="66" r="11" />
-            <circle cx="50" cy="66" r="0.8" fill="#F7F5EF" />
-            <rect x="26" y="4" width="48" height="18" />
-            <rect x="38" y="4" width="24" height="8" />
-            <rect x="26" y="110" width="48" height="18" />
-            <rect x="38" y="120" width="24" height="8" />
-          </g>
-          {appMode === "explore" && arrows.map(([fromId, toId], i) => {
-            const a = posMap[fromId]; const b = posMap[toId];
-            if (!a || !b) return null;
-            return (<line key={i} className="pass-line" x1={a.x} y1={toYs(a.y)} x2={b.x} y2={toYs(b.y)} stroke="#16233A" strokeWidth="0.7" strokeDasharray="2,1.5" opacity="0.45" markerEnd="url(#arrowhead)" />);
-          })}
-          {trails.map((t, i) => (<circle key={`trail-${t.id}-${i}`} className="ghost" cx={t.x} cy={toYs(t.y)} r="5.2" fill="#16233A" opacity="0.3" />))}
-          {appMode === "test" && result === "incorrect" && viewerTarget && (
-            <circle className="ring-pulse" cx={viewerTarget.x} cy={toYs(viewerTarget.y)} r="6" fill="none" stroke="#1F5B3F" strokeWidth="1" />
-          )}
-          {positioned.map((p) => {
-            const isViewer = appMode === "test" && p.id === viewerId;
-            const isSelected = appMode === "explore" && p.id === selectedId;
-            let cx = p.pos.x; let cy = toYs(p.pos.y);
-            if (isViewer && dragPos) { cx = dragPos.x; cy = dragPos.y; }
-            return (
-              <g key={p.id} onClick={() => tapPlayer(p.id)} onPointerDown={isViewer ? onDragStart : undefined} style={{ cursor: appMode === "explore" ? "pointer" : isViewer ? "grab" : "default" }}>
-                <circle className={isViewer && dragging ? "" : "player-dot"} cx={cx} cy={cy} r={isSelected || isViewer ? 6.4 : 5.2} fill={result === "correct" && isViewer ? "#1F5B3F" : isSelected || isViewer ? "#C75B39" : "#F7F5EF"} stroke={isSelected || isViewer ? "#F7F5EF" : "#16233A"} strokeWidth={isSelected || isViewer ? 1.1 : 0.6} />
-                <text className={isViewer && dragging ? "" : "player-label"} x={cx} y={cy + 1.6} textAnchor="middle" fontSize="5" fontWeight="700" fill={isSelected || isViewer ? "#F7F5EF" : "#16233A"}>{p.number}</text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      {appMode === "explore" && (
-        <div className="w-full max-w-md mt-5">
-          {!selected ? (
-            <div className="flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6"><span>👆</span><span>Tap any numbered player above to start.</span></div>
-          ) : (
-            <div className="card-flip-scene h-60">
-              <div className={`card-flip-inner h-full ${flipped ? "flipped" : ""}`}>
-                <div className="card-face absolute inset-0 rounded-2xl p-5 flex flex-col justify-between text-white shadow-xl" style={{ background: `linear-gradient(155deg, ${ZONE_COLOR[selectedRole.zone]}, #16233A)` }}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="uppercase text-xs tracking-[0.2em] opacity-70">{ZONE_LABEL[selectedRole.zone]}</p>
-                      <h2 className="text-2xl font-black tracking-tight">{selectedRole.label}</h2>
-                    </div>
-                    <span className="text-4xl font-black opacity-80">#{selected.number}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm leading-snug">{descMode === "kid" ? selectedRole.kidDesc : selectedRole.coachNote}</p>
-                    <p className="text-sm leading-snug font-medium">{descMode === "kid" ? selectedRole.kidJob : selectedRole.watchFor}</p>
-                    <p className="text-xs leading-snug italic opacity-80 border-t border-white/20 pt-2">Right now: {PHASE_REASON[phase][selectedRole.zone]}</p>
-                  </div>
-                  <button onClick={() => setFlipped(true)} className="self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5">↻ Flip card</button>
-                </div>
-                <div className="card-face card-face-back rounded-2xl p-5 flex flex-col justify-between text-[#16233A] shadow-xl border-2" style={{ background: "#F7F5EF", borderColor: ZONE_COLOR[selectedRole.zone] }}>
-                  <div>
-                    <p className="uppercase text-xs tracking-[0.2em] opacity-60">Watch for</p>
-                    <p className="text-base font-semibold leading-snug mt-1">{selectedRole.watchFor}</p>
-                  </div>
-                  <div className="text-xs text-[#16233A]/60 space-y-0.5">
-                    <p>Formation: {formationKey}</p>
-                    <p>Zone: {ZONE_LABEL[selectedRole.zone]}</p>
-                    <p>Jersey #{selected.number}</p>
-                  </div>
-                  <button onClick={() => setFlipped(false)} className="self-start text-xs uppercase tracking-wide bg-[#16233A]/10 rounded-full px-3 py-1.5">↻ Back</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+  return React.createElement("div", { className: "min-h-screen w-full bg-[#F7F5EF] flex flex-col items-center px-4 py-8" },
+    React.createElement("style", null, `
+      .card-flip-scene { perspective: 1200px; }
+      .card-flip-inner { position: relative; width: 100%; transition: transform 0.55s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+      .card-flip-inner.flipped { transform: rotateY(180deg); }
+      .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+      .card-face-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+      .player-dot { transition: cx 0.7s cubic-bezier(.4,0,.2,1), cy 0.7s cubic-bezier(.4,0,.2,1), r 0.25s ease; }
+      .player-label { transition: x 0.7s cubic-bezier(.4,0,.2,1), y 0.7s cubic-bezier(.4,0,.2,1); }
+      .pass-line { transition: x1 0.7s cubic-bezier(.4,0,.2,1), y1 0.7s cubic-bezier(.4,0,.2,1), x2 0.7s cubic-bezier(.4,0,.2,1), y2 0.7s cubic-bezier(.4,0,.2,1); }
+      .ghost { animation: ghostFade 0.85s ease-out forwards; }
+      @keyframes ghostFade { from { opacity: 0.35; } to { opacity: 0; } }
+      @keyframes ringPulse { 0% { r: 6; opacity: 0.9; } 100% { r: 11; opacity: 0; } }
+      .ring-pulse { animation: ringPulse 1.1s ease-out infinite; }
+    `),
+    React.createElement("div", { className: "w-full max-w-md text-center mb-5" },
+      React.createElement("p", { className: "uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1" }, "7v7 Position Guide"),
+      React.createElement("h1", { className: "text-4xl font-black text-[#16233A] tracking-tight" }, "KNOW YOUR SPOT"),
+      React.createElement("p", { className: "text-sm text-[#16233A]/70 mt-1" }, appMode === "explore" ? "Tap a player for their role. Play a phase to see the team move." : "Pick your number, then drag yourself to the right spot.")
+    ),
+    React.createElement("div", { className: "w-full max-w-md flex flex-col gap-2 mb-4" },
+      React.createElement("div", { className: "flex gap-2 justify-center" },
+        Object.keys(FORMATIONS).map((key) =>
+          React.createElement("button", {
+            key: key,
+            onClick: () => pickFormation(key),
+            className: "px-3 py-1.5 rounded-full text-sm font-bold tracking-wide transition " + (formationKey === key ? "bg-[#16233A] text-[#F7F5EF]" : "bg-white text-[#16233A] border border-[#16233A]/15")
+          }, key)
+        )
+      ),
+      React.createElement("div", { className: "flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10" },
+        ["explore", "test"].map((m) =>
+          React.createElement("button", {
+            key: m,
+            onClick: () => switchAppMode(m),
+            className: "px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition " + (appMode === m ? "bg-[#C75B39] text-white" : "text-[#16233A]/60")
+          }, m === "explore" ? "Explore" : "Test Me")
+        )
+      ),
+      appMode === "explore" && React.createElement("div", { className: "flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10" },
+        ["kid", "coach"].map((m) =>
+          React.createElement("button", {
+            key: m,
+            onClick: () => setDescMode(m),
+            className: "px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition " + (descMode === m ? "bg-[#16233A] text-white" : "text-[#16233A]/60")
+          }, m === "kid" ? "Kid Mode" : "Coach Mode")
+        )
+      )
+    ),
+    React.createElement("div", { className: "w-full max-w-md flex flex-col gap-2 mb-3" },
+      React.createElement("div", { className: "grid grid-cols-4 gap-1" },
+        PHASE_ORDER.map((p, i) =>
+          React.createElement("button", {
+            key: p,
+            onClick: () => goToPhase(i),
+            className: "py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition " + (phase === p ? "bg-[#C75B39] text-white" : "bg-white text-[#16233A]/60 border border-[#16233A]/10")
+          }, PHASE_META[p].label)
+        )
+      ),
+      appMode === "explore" && React.createElement("div", { className: "flex items-center gap-2 justify-center" },
+        React.createElement("button", {
+          onClick: () => setIsPlaying((v) => !v),
+          className: "text-xs font-bold uppercase tracking-wide bg-[#16233A] text-white rounded-full px-4 py-1.5"
+        }, isPlaying ? "⏸ Pause" : "▶ Play phases")
+      ),
+      React.createElement("p", { className: "text-center text-xs text-[#16233A]/50 italic" }, PHASE_META[phase].desc)
+    ),
+    appMode === "test" && !viewerId && React.createElement("div", { className: "w-full max-w-md bg-white rounded-2xl p-4 mb-3 border border-[#16233A]/10 text-center" },
+      React.createElement("p", { className: "text-sm font-semibold text-[#16233A] mb-2" }, "Which number are you?"),
+      React.createElement("div", { className: "flex flex-wrap gap-2 justify-center" },
+        viewerNumbers.map((num) => {
+          const p = formation.players.find((pl) => pl.number === num);
+          return React.createElement("button", {
+            key: num,
+            onClick: () => setViewerId(p.id),
+            className: "w-10 h-10 rounded-full bg-[#16233A] text-white font-black"
+          }, num);
+        })
+      )
+    ),
+    appMode === "test" && viewerId && result && React.createElement("div", {
+      className: "w-full max-w-md rounded-xl p-2 mb-2 text-center text-sm font-bold " + (result === "correct" ? "bg-[#1F5B3F]/10 text-[#1F5B3F]" : "bg-[#C75B39]/10 text-[#C75B39]")
+    }, result === "correct" ? "✅ That's it! Great spot." : "Not quite — follow the glowing ring."),
+    React.createElement("div", { className: "w-full max-w-md rounded-2xl overflow-hidden shadow-lg border-4 border-[#16233A]/10" },
+      React.createElement("svg", {
+        ref: svgRef,
+        viewBox: "0 0 100 132",
+        className: "w-full block touch-none",
+        onPointerMove: onDragMove,
+        onPointerUp: onDragEnd
+      },
+        React.createElement("defs", null,
+          React.createElement("marker", { id: "arrowhead", markerWidth: "4", markerHeight: "4", refX: "3", refY: "2", orient: "auto" },
+            React.createElement("path", { d: "M0,0 L4,2 L0,4 Z", fill: "#16233A", opacity: "0.55" })
+          )
+        ),
+        Array.from({ length: 8 }).map((_, i) =>
+          React.createElement("rect", { key: i, x: "0", y: i * 16.5, width: "100", height: "16.5", fill: i % 2 === 0 ? "#1F5B3F" : "#255E45" })
+        ),
+        [{ zone: "attack", y0: 0, y1: 44 }, { zone: "midfield", y0: 44, y1: 88 }, { zone: "defense", y0: 88, y1: 132 }].map(({ zone, y0, y1 }) =>
+          React.createElement("rect", {
+            key: zone, x: "0", y: y0, width: "100", height: y1 - y0,
+            fill: ZONE_COLOR[zone],
+            opacity: selectedRole ? (selectedRole.zone === zone ? 0.2 : 0.03) : 0.07,
+            style: { transition: "opacity 0.35s" }
+          })
+        ),
+        React.createElement("g", { stroke: "#F7F5EF", strokeWidth: "0.6", fill: "none", opacity: "0.85" },
+          React.createElement("rect", { x: "4", y: "4", width: "92", height: "124" }),
+          React.createElement("line", { x1: "4", y1: "66", x2: "96", y2: "66" }),
+          React.createElement("circle", { cx: "50", cy: "66", r: "11" }),
+          React.createElement("circle", { cx: "50", cy: "66", r: "0.8", fill: "#F7F5EF" }),
+          React.createElement("rect", { x: "26", y: "4", width: "48", height: "18" }),
+          React.createElement("rect", { x: "38", y: "4", width: "24", height: "8" }),
+          React.createElement("rect", { x: "26", y: "110", width: "48", height: "18" }),
+          React.createElement("rect", { x: "38", y: "120", width: "24", height: "8" })
+        ),
+        appMode === "explore" && arrows.map(([fromId, toId], i) => {
+          const a = posMap[fromId]; const b = posMap[toId];
+          if (!a || !b) return null;
+          return React.createElement("line", {
+            key: i, className: "pass-line", x1: a.x, y1: toYs(a.y), x2: b.x, y2: toYs(b.y),
+            stroke: "#16233A", strokeWidth: "0.7", strokeDasharray: "2,1.5", opacity: "0.45", markerEnd: "url(#arrowhead)"
+          });
+        }),
+        trails.map((t, i) => React.createElement("circle", { key: "trail-" + t.id + "-" + i, className: "ghost", cx: t.x, cy: toYs(t.y), r: "5.2", fill: "#16233A", opacity: "0.3" })),
+        appMode === "test" && result === "incorrect" && viewerTarget && React.createElement("circle", { className: "ring-pulse", cx: viewerTarget.x, cy: toYs(viewerTarget.y), r: "6", fill: "none", stroke: "#1F5B3F", strokeWidth: "1" }),
+        positioned.map((p) => {
+          const isViewer = appMode === "test" && p.id === viewerId;
+          const isSelected = appMode === "explore" && p.id === selectedId;
+          let cx = p.pos.x; let cy = toYs(p.pos.y);
+          if (isViewer && dragPos) { cx = dragPos.x; cy = dragPos.y; }
+          return React.createElement("g", {
+            key: p.id,
+            onClick: () => tapPlayer(p.id),
+            onPointerDown: isViewer ? onDragStart : undefined,
+            style: { cursor: appMode === "explore" ? "pointer" : (isViewer ? "grab" : "default") }
+          },
+            React.createElement("circle", {
+              className: isViewer && dragging ? "" : "player-dot",
+              cx: cx, cy: cy, r: isSelected || isViewer ? 6.4 : 5.2,
+              fill: result === "correct" && isViewer ? "#1F5B3F" : (isSelected || isViewer ? "#C75B39" : "#F7F5EF"),
+              stroke: isSelected || isViewer ? "#F7F5EF" : "#16233A",
+              strokeWidth: isSelected || isViewer ? 1.1 : 0.6
+            }),
+            React.createElement("text", {
+              className: isViewer && dragging ? "" : "player-label",
+              x: cx, y: cy + 1.6, textAnchor: "middle", fontSize: "5", fontWeight: "700",
+              fill: isSelected || isViewer ? "#F7F5EF" : "#16233A"
+            }, p.number)
+          );
+        })
+      )
+    ),
+    appMode === "explore" && React.createElement("div", { className: "w-full max-w-md mt-5" },
+      !selected ? React.createElement("div", { className: "flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6" },
+        React.createElement("span", null, "👆"),
+        React.createElement("span", null, "Tap any numbered player above to start.")
+      ) : React.createElement("div", { className: "card-flip-scene h-60" },
+        React.createElement("div", { className: "card-flip-inner h-full " + (flipped ? "flipped" : "") },
+          React.createElement("div", {
+            className: "card-face absolute inset-0 rounded-2xl p-5 flex flex-col justify-between text-white shadow-xl",
+            style: { background: "linear-gradient(155deg, " + ZONE_COLOR[selectedRole.zone] + ", #16233A)" }
+          },
+            React.createElement("div", { className: "flex justify-between items-start" },
+              React.createElement("div", null,
+                React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-70" }, ZONE_LABEL[selectedRole.zone]),
+                React.createElement("h2", { className: "text-2xl font-black tracking-tight" }, selectedRole.label)
+              ),
+              React.createElement("span", { className: "text-4xl font-black opacity-80" }, "#" + selected.number)
+            ),
+            React.createElement("div", { className: "space-y-2" },
+              React.createElement("p", { className: "text-sm leading-snug" }, descMode === "kid" ? selectedRole.kidDesc : selectedRole.coachNote),
+              React.createElement("p", { className: "text-sm leading-snug font-medium" }, descMode === "kid" ? selectedRole.kidJob : selectedRole.watchFor),
+              React.createElement("p", { className: "text-xs leading-snug italic opacity-80 border-t border-white/20 pt-2" }, "Right now: " + PHASE_REASON[phase][selectedRole.zone])
+            ),
+            React.createElement("button", { onClick: () => setFlipped(true), className: "self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5" }, "↻ Flip card")
+          ),
+          React.createElement("div", {
+            className: "card-face card-face-back rounded-2xl p-5 flex flex-col justify-between text-[#16233A] shadow-xl border-2",
+            style: { background: "#F7F5EF", borderColor: ZONE_COLOR[selectedRole.zone] }
+          },
+            React.createElement("div", null,
+              React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-60" }, "Watch for"),
+              React.createElement("p", { className: "text-base font-semibold leading-snug mt-1" }, selectedRole.watchFor)
+            ),
+            React.createElement("div", { className: "text-xs text-[#16233A]/60 space-y-0.5" },
+              React.createElement("p", null, "Formation: " + formationKey),
+              React.createElement("p", null, "Zone: " + ZONE_LABEL[selectedRole.zone]),
+              React.createElement("p", null, "Jersey #" + selected.number)
+            ),
+            React.createElement("button", { onClick: () => setFlipped(false), className: "self-start text-xs uppercase tracking-wide bg-[#16233A]/10 rounded-full px-3 py-1.5" }, "↻ Back")
+          )
+        )
+      )
+    )
   );
 }
 
-ReactDOM.createRoot(document.getElementById("app")).render(<App />);
+ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(App));
 </script>
 </body>
 </html>
