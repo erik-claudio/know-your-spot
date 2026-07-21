@@ -108,6 +108,7 @@ svg{display:block}
 .overflow-y-auto{overflow-y:auto}
 .touch-none{touch-action:none}
 .mx-auto{margin-left:auto;margin-right:auto}
+.term-tap{text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer;font-weight:600}
 </style>
 </head>
 <body>
@@ -226,6 +227,7 @@ const PHASE_META = {
   progression: { label: "Progress", desc: "Move the ball through midfield as a unit." },
   finalThird: { label: "Final Third", desc: "Wide players cut inside, fullbacks overlap for width." },
 };
+const PHASE_BALL_Y = { defend: 80, buildOut: 60, progression: 40, finalThird: 20 };
 
 const PHASE_REASON = {
   defend: {
@@ -238,7 +240,7 @@ const PHASE_REASON = {
     cf: "Lead the press when the ball's close, drop to help when it's not.",
   },
   buildOut: {
-    gk: "You start it — first look short to a center back, or find the widest free option.",
+    gk: "You start the build out — first look short to a center back, or find the widest free option.",
     fb: "You push wide onto the touchline. First read: can we go down the line to advance quickly, or turn it back inside if they press?",
     cb: "You spread wide to open a passing lane back to the keeper, and stay calm on the ball.",
     wm: "You drop short to offer an easy out-ball in space.",
@@ -258,7 +260,7 @@ const PHASE_REASON = {
   finalThird: {
     gk: "You stay alert for a long ball over the top if we lose possession.",
     fb: "You overlap down the line for an extra body wide and a cutback option.",
-    cb: "You hold your position centrally in case we lose the ball.",
+    cb: "You hold your position centrally in the final third in case we lose the ball.",
     wm: "You get forward to support the attack, staying ready to track back.",
     cm: "You arrive late into the box for a cutback or rebound.",
     wf: "You attack the space in behind, or cut inside to shoot.",
@@ -272,408 +274,33 @@ const PHASE_ADJUST = {
   finalThird: { gk: { dx: 0, dy: -4 }, fb: { dx: (x) => (x < 50 ? -6 : 6), dy: -40 }, cb: { dx: (x) => (x < 50 ? -2 : 2), dy: -22 }, wm: { dx: (x) => (x < 50 ? 8 : -8), dy: -38 }, cm: { dx: 0, dy: -32 }, wf: { dx: (x) => (x < 50 ? 6 : -6), dy: -14 }, cf: { dx: 0, dy: -10 } },
 };
 
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+const BALL_ZONES = [
+  { label: "Wide Left", x: 15 },
+  { label: "Half-Left", x: 32 },
+  { label: "Center", x: 50 },
+  { label: "Half-Right", x: 68 },
+  { label: "Wide Right", x: 85 },
+];
 
-function phasePosition(player, phase) {
-  if (phase === "defend") return { x: player.x, y: player.y };
-  const adj = (PHASE_ADJUST[phase] && PHASE_ADJUST[phase][player.role]) || { dx: 0, dy: 0 };
-  const dx = typeof adj.dx === "function" ? adj.dx(player.x) : adj.dx;
-  const x = clamp(player.x + dx, 8, 92);
-  const y = clamp(player.y + adj.dy, 5, 96);
-  return { x, y };
-}
+const SHAPE_CAPTIONS = [
+  "Ball's out wide left. The whole team shifts that way — everyone gets ball-side, and the far-side winger tucks in to help cover the middle.",
+  "Ball's in the left half-space. The block slides left to stay compact and cut off passing lanes through the middle.",
+  "Ball's central. The shape stays balanced — both sides stay close enough to press or cover in behind.",
+  "Ball's in the right half-space. The block slides right to stay compact and cut off passing lanes through the middle.",
+  "Ball's out wide right. The whole team shifts that way — everyone gets ball-side, and the far-side winger tucks in to help cover the middle.",
+];
 
-function getArrows(phase, players) {
-  const byZone = (zone) => players.filter((p) => ROLES[p.role].zone === zone);
-  if (phase === "defend") return [];
-  if (phase === "buildOut") {
-    const gk = players.find((p) => p.role === "gk");
-    if (!gk) return [];
-    return byZone("defense").filter((p) => p.role !== "gk").map((p) => [gk.id, p.id]);
-  }
-  if (phase === "progression") {
-    const defenders = byZone("defense").filter((p) => p.role !== "gk");
-    const mids = byZone("midfield");
-    if (!mids.length) return [];
-    return defenders.map((d) => {
-      const nearest = mids.reduce((a, b) => (Math.abs(b.x - d.x) < Math.abs(a.x - d.x) ? b : a));
-      return [d.id, nearest.id];
-    });
-  }
-  if (phase === "finalThird") {
-    const mids = byZone("midfield");
-    const forwards = byZone("attack");
-    if (!forwards.length) return [];
-    return mids.map((m) => {
-      const nearest = forwards.reduce((a, b) => (Math.abs(b.x - m.x) < Math.abs(a.x - m.x) ? b : a));
-      return [m.id, nearest.id];
-    });
-  }
-  return [];
-}
-
-function getBallHolder(phase, arrows, gkId) {
-  if (phase === "defend") return gkId;
-  if (arrows.length > 0) return arrows[0][1];
-  return gkId;
-}
-
-function playTone(freq, duration) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = freq;
-    osc.type = "sine";
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration / 1000);
-  } catch (e) {}
-}
-
-function buzz(pattern) {
-  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
-}
-
-function App() {
-  const [gameSize, setGameSize] = useState("7v7");
-  const [formationKey, setFormationKey] = useState(GAME_SIZES["7v7"].defaultFormation);
-  const [descMode, setDescMode] = useState("kid");
-  const [appMode, setAppMode] = useState("explore");
-  const [selectedId, setSelectedId] = useState(null);
-  const [cardView, setCardView] = useState("info");
-  const [phaseIndex, setPhaseIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [viewerId, setViewerId] = useState(null);
-  const [dragPos, setDragPos] = useState(null);
-  const [dragging, setDragging] = useState(false);
-  const [result, setResult] = useState(null);
-  const [trails, setTrails] = useState([]);
-  const [ballKick, setBallKick] = useState(false);
-  const svgRef = useRef(null);
-
-  const phase = PHASE_ORDER[phaseIndex];
-  const sizeData = GAME_SIZES[gameSize];
-  const formation = sizeData.formations[formationKey];
-  const selected = useMemo(() => formation.players.find((p) => p.id === selectedId) || null, [formation, selectedId]);
-  const selectedRole = selected ? ROLES[selected.role] : null;
-
-  const positioned = useMemo(() => formation.players.map((p) => ({ ...p, pos: phasePosition(p, phase) })), [formation, phase]);
-  const posMap = useMemo(() => { const m = {}; positioned.forEach((p) => (m[p.id] = p.pos)); return m; }, [positioned]);
-  const arrows = useMemo(() => getArrows(phase, formation.players), [phase, formation]);
-  const viewerPlayer = formation.players.find((p) => p.id === viewerId) || null;
-  const viewerTarget = viewerPlayer ? posMap[viewerPlayer.id] : null;
-
-  const gkId = useMemo(() => { const gk = formation.players.find((p) => p.role === "gk"); return gk ? gk.id : null; }, [formation]);
-  const ballHolderId = useMemo(() => getBallHolder(phase, arrows, gkId), [phase, arrows, gkId]);
-  const ballPos = posMap[ballHolderId] || posMap[gkId];
-
-  useEffect(() => {
-    if (!isPlaying) return;
-    const id = setInterval(() => {
-      setTrails(positioned.map((p) => ({ id: p.id, x: p.pos.x, y: p.pos.y })));
-      setTimeout(() => setTrails([]), 850);
-      setBallKick(true);
-      setTimeout(() => setBallKick(false), 400);
-      setPhaseIndex((i) => (i + 1) % PHASE_ORDER.length);
-    }, 2400);
-    return () => clearInterval(id);
-  }, [isPlaying, positioned]);
-
-  function resetAll() {
-    setSelectedId(null); setCardView("info"); setPhaseIndex(0); setIsPlaying(false);
-    setViewerId(null); setDragPos(null); setDragging(false); setResult(null); setTrails([]); setBallKick(false);
-  }
-
-  function pickGameSize(size) {
-    setGameSize(size);
-    setFormationKey(GAME_SIZES[size].defaultFormation);
-    resetAll();
-  }
-
-  function pickFormation(key) { setFormationKey(key); resetAll(); }
-
-  function switchAppMode(m) {
-    setAppMode(m); setIsPlaying(false); setDragPos(null); setResult(null); setSelectedId(null); setCardView("info");
-  }
-
-  function goToPhase(i) {
-    setTrails(positioned.map((p) => ({ id: p.id, x: p.pos.x, y: p.pos.y })));
-    setTimeout(() => setTrails([]), 850);
-    setBallKick(true);
-    setTimeout(() => setBallKick(false), 400);
-    setPhaseIndex(i); setIsPlaying(false); setDragPos(null); setResult(null);
-  }
-
-  function tapPlayer(id) {
-    if (appMode !== "explore") return;
-    setSelectedId(id);
-    setCardView("info");
-  }
-
-  function closeCard() {
-    setSelectedId(null);
-    setCardView("info");
-  }
-
-  function toYs(y) { return (y / 100) * 132; }
-
-  function clientToSvg(clientX, clientY) {
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = clamp(((clientX - rect.left) / rect.width) * 100, 0, 100);
-    const y = clamp(((clientY - rect.top) / rect.height) * 132, 0, 132);
-    return { x, y };
-  }
-
-  function onDragStart(e) {
-    if (appMode !== "test" || !viewerPlayer) return;
-    e.target.setPointerCapture(e.pointerId);
-    setDragging(true); setResult(null);
-    setDragPos(clientToSvg(e.clientX, e.clientY));
-  }
-
-  function onDragMove(e) { if (!dragging) return; setDragPos(clientToSvg(e.clientX, e.clientY)); }
-
-  function onDragEnd() {
-    if (!dragging || !viewerTarget) return;
-    setDragging(false);
-    const targetX = viewerTarget.x;
-    const targetY = toYs(viewerTarget.y);
-    const dist = Math.hypot((dragPos ? dragPos.x : 0) - targetX, (dragPos ? dragPos.y : 0) - targetY);
-    if (dist <= 9) {
-      setResult("correct"); playTone(880, 180); buzz([40]);
-      setTimeout(() => { setDragPos(null); setResult(null); }, 1400);
-    } else {
-      setResult("incorrect"); playTone(220, 220); buzz([30, 40, 30]);
-    }
-  }
-
-  const viewerNumbers = formation.players.map((p) => p.number);
-
-  return React.createElement("div", { className: "min-h-screen w-full bg-[#F7F5EF] flex flex-col items-center px-4 py-8" },
-    React.createElement("style", null, `
-      .player-dot { transition: cx 0.7s cubic-bezier(.4,0,.2,1), cy 0.7s cubic-bezier(.4,0,.2,1), r 0.25s ease; }
-      .player-label { transition: x 0.7s cubic-bezier(.4,0,.2,1), y 0.7s cubic-bezier(.4,0,.2,1); }
-      .pass-line { transition: x1 0.7s cubic-bezier(.4,0,.2,1), y1 0.7s cubic-bezier(.4,0,.2,1), x2 0.7s cubic-bezier(.4,0,.2,1), y2 0.7s cubic-bezier(.4,0,.2,1); }
-      .ghost { animation: ghostFade 0.85s ease-out forwards; }
-      @keyframes ghostFade { from { opacity: 0.35; } to { opacity: 0; } }
-      @keyframes ringPulse { 0% { r: 6; opacity: 0.9; } 100% { r: 11; opacity: 0; } }
-      .ring-pulse { animation: ringPulse 1.1s ease-out infinite; }
-      .ball-wrap { transition: transform 0.9s cubic-bezier(.4,0,.2,1); }
-      .ball-kick { animation: ballKick 0.4s ease-out; }
-      @keyframes ballKick { 0% { font-size: 8px; } 40% { font-size: 12px; } 100% { font-size: 8px; } }
-      .backdrop { position: fixed; inset: 0; background: rgba(22,35,58,0.55); z-index: 40; animation: fadeIn 0.2s ease-out; }
-      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      .popup-wrap { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; pointer-events: none; }
-      .popup-card { pointer-events: auto; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; border-radius: 20px; animation: popIn 0.22s cubic-bezier(.2,.9,.3,1.2); }
-      @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-    `),
-    React.createElement("div", { className: "w-full max-w-md text-center mb-5" },
-      React.createElement("p", { className: "uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1" }, gameSize + " Position Guide"),
-      React.createElement("h1", { className: "text-4xl font-black text-[#16233A] tracking-tight" }, "KNOW YOUR SPOT"),
-      React.createElement("p", { className: "text-sm text-[#16233A]/70 mt-1" }, appMode === "explore" ? "Tap a player for their role. Play a phase to see the team move." : "Pick your number, then drag yourself to the right spot.")
-    ),
-    React.createElement("div", { className: "w-full max-w-md flex flex-col gap-2 mb-4" },
-      React.createElement("div", { className: "flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10" },
-        Object.keys(GAME_SIZES).map((size) =>
-          React.createElement("button", {
-            key: size,
-            onClick: () => pickGameSize(size),
-            className: "px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition " + (gameSize === size ? "bg-[#5B8FA8] text-white" : "text-[#16233A]/60")
-          }, size)
-        )
-      ),
-      React.createElement("div", { className: "flex gap-2 justify-center", style: { flexWrap: "wrap" } },
-        Object.keys(sizeData.formations).map((key) =>
-          React.createElement("button", {
-            key: key,
-            onClick: () => pickFormation(key),
-            className: "px-3 py-1.5 rounded-full text-sm font-bold tracking-wide transition " + (formationKey === key ? "bg-[#16233A] text-[#F7F5EF]" : "bg-white text-[#16233A] border border-[#16233A]/15")
-          }, key)
-        )
-      ),
-      React.createElement("div", { className: "flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10" },
-        ["explore", "test"].map((m) =>
-          React.createElement("button", {
-            key: m,
-            onClick: () => switchAppMode(m),
-            className: "px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition " + (appMode === m ? "bg-[#C75B39] text-white" : "text-[#16233A]/60")
-          }, m === "explore" ? "Explore" : "Test Me")
-        )
-      ),
-      appMode === "explore" && React.createElement("div", { className: "flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10" },
-        ["kid", "coach"].map((m) =>
-          React.createElement("button", {
-            key: m,
-            onClick: () => setDescMode(m),
-            className: "px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition " + (descMode === m ? "bg-[#16233A] text-white" : "text-[#16233A]/60")
-          }, m === "kid" ? "Kid Mode" : "Coach Mode")
-        )
-      ),
-      React.createElement("p", { className: "text-center text-xs text-[#16233A]/50 italic" }, formation.note)
-    ),
-    React.createElement("div", { className: "w-full max-w-md flex flex-col gap-2 mb-3" },
-      React.createElement("div", { className: "grid grid-cols-4 gap-1" },
-        PHASE_ORDER.map((p, i) =>
-          React.createElement("button", {
-            key: p,
-            onClick: () => goToPhase(i),
-            className: "py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition " + (phase === p ? "bg-[#C75B39] text-white" : "bg-white text-[#16233A]/60 border border-[#16233A]/10")
-          }, PHASE_META[p].label)
-        )
-      ),
-      appMode === "explore" && React.createElement("div", { className: "flex items-center gap-2 justify-center" },
-        React.createElement("button", {
-          onClick: () => setIsPlaying((v) => !v),
-          className: "text-xs font-bold uppercase tracking-wide bg-[#16233A] text-white rounded-full px-4 py-1.5"
-        }, isPlaying ? "⏸ Pause" : "▶ Play phases")
-      ),
-      React.createElement("p", { className: "text-center text-xs text-[#16233A]/50 italic" }, PHASE_META[phase].desc)
-    ),
-    appMode === "test" && !viewerId && React.createElement("div", { className: "w-full max-w-md bg-white rounded-2xl p-4 mb-3 border border-[#16233A]/10 text-center" },
-      React.createElement("p", { className: "text-sm font-semibold text-[#16233A] mb-2" }, "Which number are you?"),
-      React.createElement("div", { className: "flex flex-wrap gap-2 justify-center" },
-        viewerNumbers.map((num) => {
-          const p = formation.players.find((pl) => pl.number === num);
-          return React.createElement("button", {
-            key: num,
-            onClick: () => setViewerId(p.id),
-            className: "w-10 h-10 rounded-full bg-[#16233A] text-white font-black"
-          }, num);
-        })
-      )
-    ),
-    appMode === "test" && viewerId && result && React.createElement("div", {
-      className: "w-full max-w-md rounded-xl p-2 mb-2 text-center text-sm font-bold " + (result === "correct" ? "bg-[#1F5B3F]/10 text-[#1F5B3F]" : "bg-[#C75B39]/10 text-[#C75B39]")
-    }, result === "correct" ? "✅ That's it! Great spot." : "Not quite — follow the glowing ring."),
-    React.createElement("div", { className: "w-full max-w-md rounded-2xl overflow-hidden shadow-lg border-4 border-[#16233A]/10" },
-      React.createElement("svg", {
-        ref: svgRef,
-        viewBox: "0 0 100 132",
-        className: "w-full block touch-none",
-        onPointerMove: onDragMove,
-        onPointerUp: onDragEnd
-      },
-        React.createElement("defs", null,
-          React.createElement("marker", { id: "arrowhead", markerWidth: "4", markerHeight: "4", refX: "3", refY: "2", orient: "auto" },
-            React.createElement("path", { d: "M0,0 L4,2 L0,4 Z", fill: "#16233A", opacity: "0.55" })
-          )
-        ),
-        Array.from({ length: 8 }).map((_, i) =>
-          React.createElement("rect", { key: i, x: "0", y: i * 16.5, width: "100", height: "16.5", fill: i % 2 === 0 ? "#1F5B3F" : "#255E45" })
-        ),
-        [{ zone: "attack", y0: 0, y1: 44 }, { zone: "midfield", y0: 44, y1: 88 }, { zone: "defense", y0: 88, y1: 132 }].map(({ zone, y0, y1 }) =>
-          React.createElement("rect", {
-            key: zone, x: "0", y: y0, width: "100", height: y1 - y0,
-            fill: ZONE_COLOR[zone],
-            opacity: selectedRole ? (selectedRole.zone === zone ? 0.2 : 0.03) : 0.07,
-            style: { transition: "opacity 0.35s" }
-          })
-        ),
-        React.createElement("g", { stroke: "#F7F5EF", strokeWidth: "0.6", fill: "none", opacity: "0.85" },
-          React.createElement("rect", { x: "4", y: "4", width: "92", height: "124" }),
-          React.createElement("line", { x1: "4", y1: "66", x2: "96", y2: "66" }),
-          React.createElement("circle", { cx: "50", cy: "66", r: "11" }),
-          React.createElement("circle", { cx: "50", cy: "66", r: "0.8", fill: "#F7F5EF" }),
-          React.createElement("rect", { x: "26", y: "4", width: "48", height: "18" }),
-          React.createElement("rect", { x: "38", y: "4", width: "24", height: "8" }),
-          React.createElement("rect", { x: "26", y: "110", width: "48", height: "18" }),
-          React.createElement("rect", { x: "38", y: "120", width: "24", height: "8" })
-        ),
-        appMode === "explore" && arrows.map(([fromId, toId], i) => {
-          const a = posMap[fromId]; const b = posMap[toId];
-          if (!a || !b) return null;
-          return React.createElement("line", {
-            key: i, className: "pass-line", x1: a.x, y1: toYs(a.y), x2: b.x, y2: toYs(b.y),
-            stroke: "#16233A", strokeWidth: "0.7", strokeDasharray: "2,1.5", opacity: "0.45", markerEnd: "url(#arrowhead)"
-          });
-        }),
-        trails.map((t, i) => React.createElement("circle", { key: "trail-" + t.id + "-" + i, className: "ghost", cx: t.x, cy: toYs(t.y), r: "5.2", fill: "#16233A", opacity: "0.3" })),
-        appMode === "test" && result === "incorrect" && viewerTarget && React.createElement("circle", { className: "ring-pulse", cx: viewerTarget.x, cy: toYs(viewerTarget.y), r: "6", fill: "none", stroke: "#1F5B3F", strokeWidth: "1" }),
-        appMode === "explore" && ballPos && React.createElement("g", {
-          className: "ball-wrap",
-          style: { transform: "translate(" + ballPos.x + "px, " + (toYs(ballPos.y) - 7) + "px)" }
-        },
-          React.createElement("text", {
-            className: ballKick ? "ball-kick" : "",
-            x: "0", y: "0", textAnchor: "middle", fontSize: "8"
-          }, "⚽")
-        ),
-        positioned.map((p) => {
-          const isViewer = appMode === "test" && p.id === viewerId;
-          const isSelected = appMode === "explore" && p.id === selectedId;
-          let cx = p.pos.x; let cy = toYs(p.pos.y);
-          if (isViewer && dragPos) { cx = dragPos.x; cy = dragPos.y; }
-          return React.createElement("g", {
-            key: p.id,
-            onClick: () => tapPlayer(p.id),
-            onPointerDown: isViewer ? onDragStart : undefined,
-            style: { cursor: appMode === "explore" ? "pointer" : (isViewer ? "grab" : "default") }
-          },
-            React.createElement("circle", {
-              className: isViewer && dragging ? "" : "player-dot",
-              cx: cx, cy: cy, r: isSelected || isViewer ? 6.4 : 5.2,
-              fill: result === "correct" && isViewer ? "#1F5B3F" : (isSelected || isViewer ? "#C75B39" : "#F7F5EF"),
-              stroke: isSelected || isViewer ? "#F7F5EF" : "#16233A",
-              strokeWidth: isSelected || isViewer ? 1.1 : 0.6
-            }),
-            React.createElement("text", {
-              className: isViewer && dragging ? "" : "player-label",
-              x: cx, y: cy + 1.6, textAnchor: "middle", fontSize: "5", fontWeight: "700",
-              fill: isSelected || isViewer ? "#F7F5EF" : "#16233A"
-            }, p.number)
-          );
-        })
-      )
-    ),
-    appMode === "explore" && !selected && React.createElement("div", { className: "w-full max-w-md mt-5" },
-      React.createElement("div", { className: "flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6" },
-        React.createElement("span", null, "👆"),
-        React.createElement("span", null, "Tap any numbered player above to start.")
-      )
-    ),
-    appMode === "explore" && selected && React.createElement(React.Fragment, null,
-      React.createElement("div", { className: "backdrop", onClick: closeCard }),
-      React.createElement("div", { className: "popup-wrap" },
-        React.createElement("div", {
-          className: "popup-card p-5 shadow-xl",
-          style: cardView === "info"
-            ? { background: "linear-gradient(155deg, " + ZONE_COLOR[selectedRole.zone] + ", #16233A)", color: "white" }
-            : { background: "#F7F5EF", color: "#16233A", border: "2px solid " + ZONE_COLOR[selectedRole.zone] }
-        },
-          React.createElement("div", { className: "flex justify-between items-start mb-2" },
-            React.createElement("button", { onClick: closeCard, className: "text-xs uppercase tracking-wide opacity-60" }, "✕ Close"),
-            React.createElement("span", { className: "text-2xl font-black opacity-80" }, "#" + selected.number)
-          ),
-          cardView === "info" ? React.createElement(React.Fragment, null,
-            React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-70" }, ZONE_LABEL[selectedRole.zone]),
-            React.createElement("h2", { className: "text-2xl font-black tracking-tight mb-2" }, selectedRole.label),
-            React.createElement("div", { className: "space-y-2" },
-              React.createElement("p", { className: "text-sm leading-snug" }, descMode === "kid" ? selectedRole.kidDesc : selectedRole.coachNote),
-              React.createElement("p", { className: "text-sm leading-snug font-medium" }, descMode === "kid" ? selectedRole.kidJob : selectedRole.watchFor),
-              React.createElement("p", { className: "text-xs leading-snug italic opacity-80 border-t border-white/20 pt-2" }, "Right now: " + PHASE_REASON[phase][selected.role])
-            ),
-            React.createElement("button", { onClick: () => setCardView("back"), className: "mt-3 self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5" }, "Show watch-for tip →")
-          ) : React.createElement(React.Fragment, null,
-            React.createElement("p", { className: "uppercase text-xs tracking-[0.2em] opacity-60" }, "Watch for"),
-            React.createElement("p", { className: "text-base font-semibold leading-snug mt-1 mb-3" }, selectedRole.watchFor),
-            React.createElement("div", { className: "text-xs opacity-60 space-y-0.5 mb-3" },
-              React.createElement("p", null, "Formation: " + formationKey),
-              React.createElement("p", null, "Zone: " + ZONE_LABEL[selectedRole.zone]),
-              React.createElement("p", null, "Jersey #" + selected.number)
-            ),
-            React.createElement("button", { onClick: () => setCardView("info"), className: "self-start text-xs uppercase tracking-wide bg-[#16233A]/10 rounded-full px-3 py-1.5" }, "← Back to role info")
-          )
-        )
-      )
-    )
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(App));
-</script>
-</body>
-</html>
+const TERMS = {
+  "goal-side": "Staying between your attacker and your own goal, so you can react to what's in front of you.",
+  "ball-side": "Shifting your position toward whichever side of the field the ball is currently on.",
+  "final third": "The third of the field closest to the opponent's goal, where you're looking to create and finish chances.",
+  "half-space": "The vertical strip of the field between the wide touchline and the very center — a key area for creating angles.",
+  "down the line": "Playing the ball forward along the touchline to a teammate, rather than infield.",
+  "half-turn": "Receiving the ball on an angle so you're already facing partly forward, instead of with your back fully to goal.",
+  "cutback": "A pass played backward from near the goal line into the box, for a teammate arriving to shoot.",
+  "overlap": "A run from behind a teammate on the outside, to get forward and offer an option wide.",
+  "check your shoulder": "Glancing behind you before the ball arrives, so you know what's around you before you receive it.",
+  "build out": "Playing the ball out from your own goalkeeper, using short passes instead of clearing it long.",
+};
+const TERM_KEYS_SORTED = Object.keys(TERMS).sort((a, b) => b.length - a.length);
+const TERM_REGEX = new RegExp("(" + TERM_KEYS_SORTED.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "g
