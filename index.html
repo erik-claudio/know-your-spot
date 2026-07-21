@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Know Your Spot — 7v7 Position Guide</title>
+<title>Know Your Spot — Position Guide</title>
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin="anonymous"></script>
@@ -19,7 +19,7 @@ svg{display:block}
 .w-fit{width:fit-content}
 .w-10{width:2.5rem}
 .h-10{height:2.5rem}
-.h-80{height:20rem}
+.h-96{height:24rem}
 .max-w-md{max-width:28rem}
 .block{display:block}
 .flex{display:flex}
@@ -108,6 +108,7 @@ svg{display:block}
 .border-white\/20{border-color:rgba(255,255,255,.2)}
 .transition{transition-property:all;transition-duration:.15s}
 .overflow-hidden{overflow:hidden}
+.overflow-y-auto{overflow-y:auto}
 .touch-none{touch-action:none}
 .mx-auto{margin-left:auto;margin-right:auto}
 </style>
@@ -134,34 +135,88 @@ const ROLES = {
   cf: { label: "Center Forward", kidDesc: "You're the team's main goal-scoring threat.", kidJob: "Hold up the ball, make runs behind the defense, finish your chances.", watchFor: "Time runs to beat the offside line, not before.", coachNote: "Leads the press, occupies center backs, and finishes chances.", zone: "attack" },
 };
 
-const FORMATIONS = {
-  "2-3-1": { note: "The standard youth 7v7 formation — two center backs, three across midfield, one striker.", players: [
-    { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
-    { id: "cb1", role: "cb", number: 4, x: 35, y: 72 },
-    { id: "cb2", role: "cb", number: 5, x: 65, y: 72 },
-    { id: "lm", role: "wm", number: 6, x: 20, y: 46 },
-    { id: "cm", role: "cm", number: 8, x: 50, y: 48 },
-    { id: "rm", role: "wm", number: 7, x: 80, y: 46 },
-    { id: "cf", role: "cf", number: 9, x: 50, y: 16 },
-  ]},
-  "3-2-1": { note: "Solid back three, narrow midfield pair, lone striker.", players: [
-    { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
-    { id: "lb", role: "fb", number: 3, x: 22, y: 70 },
-    { id: "cb", role: "cb", number: 4, x: 50, y: 74 },
-    { id: "rb", role: "fb", number: 2, x: 78, y: 70 },
-    { id: "lm", role: "cm", number: 6, x: 35, y: 44 },
-    { id: "rm", role: "cm", number: 8, x: 65, y: 44 },
-    { id: "cf", role: "cf", number: 9, x: 50, y: 16 },
-  ]},
-  "2-2-2": { note: "Even spacing top to bottom — easy shape for kids to learn.", players: [
-    { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
-    { id: "cb1", role: "cb", number: 4, x: 32, y: 74 },
-    { id: "cb2", role: "cb", number: 5, x: 68, y: 74 },
-    { id: "lm", role: "cm", number: 6, x: 30, y: 46 },
-    { id: "rm", role: "cm", number: 8, x: 70, y: 46 },
-    { id: "lf", role: "wf", number: 9, x: 32, y: 18 },
-    { id: "rf", role: "wf", number: 10, x: 68, y: 18 },
-  ]},
+const GAME_SIZES = {
+  "7v7": {
+    label: "7v7",
+    defaultFormation: "2-3-1",
+    formations: {
+      "2-3-1": { note: "The standard youth 7v7 formation — most widely taught starting shape.", players: [
+        { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+        { id: "cb1", role: "cb", number: 4, x: 35, y: 72 },
+        { id: "cb2", role: "cb", number: 5, x: 65, y: 72 },
+        { id: "lm", role: "wm", number: 6, x: 20, y: 46 },
+        { id: "cm", role: "cm", number: 8, x: 50, y: 48 },
+        { id: "rm", role: "wm", number: 7, x: 80, y: 46 },
+        { id: "cf", role: "cf", number: 9, x: 50, y: 16 },
+      ]},
+      "3-2-1": { note: "Solid back three, narrow midfield pair, lone striker.", players: [
+        { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+        { id: "lb", role: "fb", number: 3, x: 22, y: 70 },
+        { id: "cb", role: "cb", number: 4, x: 50, y: 74 },
+        { id: "rb", role: "fb", number: 2, x: 78, y: 70 },
+        { id: "lm", role: "cm", number: 6, x: 35, y: 44 },
+        { id: "rm", role: "cm", number: 8, x: 65, y: 44 },
+        { id: "cf", role: "cf", number: 9, x: 50, y: 16 },
+      ]},
+      "2-2-2": { note: "Even spacing top to bottom — easy shape for kids to learn.", players: [
+        { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+        { id: "cb1", role: "cb", number: 4, x: 32, y: 74 },
+        { id: "cb2", role: "cb", number: 5, x: 68, y: 74 },
+        { id: "lm", role: "cm", number: 6, x: 30, y: 46 },
+        { id: "rm", role: "cm", number: 8, x: 70, y: 46 },
+        { id: "lf", role: "wf", number: 9, x: 32, y: 18 },
+        { id: "rf", role: "wf", number: 10, x: 68, y: 18 },
+      ]},
+      "3-1-2": { note: "A more direct variant of 3-2-1 — extra numbers up top with two out-and-out forwards.", players: [
+        { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+        { id: "lb", role: "fb", number: 3, x: 22, y: 70 },
+        { id: "cb", role: "cb", number: 4, x: 50, y: 74 },
+        { id: "rb", role: "fb", number: 2, x: 78, y: 70 },
+        { id: "cm", role: "cm", number: 6, x: 50, y: 46 },
+        { id: "lf", role: "wf", number: 9, x: 30, y: 18 },
+        { id: "rf", role: "wf", number: 10, x: 70, y: 18 },
+      ]},
+    }
+  },
+  "9v9": {
+    label: "9v9",
+    defaultFormation: "3-3-2",
+    formations: {
+      "3-3-2": { note: "The most popular, balanced 9v9 formation — easy to teach and defensively sound.", players: [
+        { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+        { id: "lb", role: "fb", number: 3, x: 22, y: 70 },
+        { id: "cb", role: "cb", number: 4, x: 50, y: 74 },
+        { id: "rb", role: "fb", number: 2, x: 78, y: 70 },
+        { id: "lm", role: "wm", number: 6, x: 22, y: 46 },
+        { id: "cm", role: "cm", number: 8, x: 50, y: 48 },
+        { id: "rm", role: "wm", number: 7, x: 78, y: 46 },
+        { id: "lf", role: "wf", number: 9, x: 33, y: 18 },
+        { id: "rf", role: "wf", number: 10, x: 67, y: 18 },
+      ]},
+      "3-2-3": { note: "The default at many grassroots programs — natural passing triangles, balanced width.", players: [
+        { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+        { id: "lb", role: "fb", number: 3, x: 22, y: 70 },
+        { id: "cb", role: "cb", number: 4, x: 50, y: 74 },
+        { id: "rb", role: "fb", number: 2, x: 78, y: 70 },
+        { id: "lm", role: "cm", number: 6, x: 38, y: 46 },
+        { id: "rm", role: "cm", number: 8, x: 62, y: 46 },
+        { id: "lf", role: "wf", number: 9, x: 20, y: 18 },
+        { id: "cf", role: "cf", number: 10, x: 50, y: 14 },
+        { id: "rf", role: "wf", number: 11, x: 80, y: 18 },
+      ]},
+      "2-3-3": { note: "The most attacking of the three — extra width up top to stretch defenses.", players: [
+        { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+        { id: "cb1", role: "cb", number: 4, x: 35, y: 72 },
+        { id: "cb2", role: "cb", number: 5, x: 65, y: 72 },
+        { id: "lm", role: "wm", number: 6, x: 18, y: 48 },
+        { id: "cm", role: "cm", number: 8, x: 50, y: 50 },
+        { id: "rm", role: "wm", number: 7, x: 82, y: 48 },
+        { id: "lf", role: "wf", number: 9, x: 22, y: 18 },
+        { id: "cf", role: "cf", number: 10, x: 50, y: 14 },
+        { id: "rf", role: "wf", number: 11, x: 78, y: 18 },
+      ]},
+    }
+  }
 };
 
 const ZONE_COLOR = { defense: "#5B8FA8", midfield: "#E8A93A", attack: "#C75B39" };
@@ -287,7 +342,8 @@ function buzz(pattern) {
 }
 
 function App() {
-  const [formationKey, setFormationKey] = useState("2-3-1");
+  const [gameSize, setGameSize] = useState("7v7");
+  const [formationKey, setFormationKey] = useState(GAME_SIZES["7v7"].defaultFormation);
   const [descMode, setDescMode] = useState("kid");
   const [appMode, setAppMode] = useState("explore");
   const [selectedId, setSelectedId] = useState(null);
@@ -303,7 +359,8 @@ function App() {
   const svgRef = useRef(null);
 
   const phase = PHASE_ORDER[phaseIndex];
-  const formation = FORMATIONS[formationKey];
+  const sizeData = GAME_SIZES[gameSize];
+  const formation = sizeData.formations[formationKey];
   const selected = useMemo(() => formation.players.find((p) => p.id === selectedId) || null, [formation, selectedId]);
   const selectedRole = selected ? ROLES[selected.role] : null;
 
@@ -329,12 +386,18 @@ function App() {
     return () => clearInterval(id);
   }, [isPlaying, positioned]);
 
-  function pickFormation(key) { setFormationKey(key); resetAll(); }
-
   function resetAll() {
     setSelectedId(null); setFlipped(false); setPhaseIndex(0); setIsPlaying(false);
     setViewerId(null); setDragPos(null); setDragging(false); setResult(null); setTrails([]); setBallKick(false);
   }
+
+  function pickGameSize(size) {
+    setGameSize(size);
+    setFormationKey(GAME_SIZES[size].defaultFormation);
+    resetAll();
+  }
+
+  function pickFormation(key) { setFormationKey(key); resetAll(); }
 
   function switchAppMode(m) {
     setAppMode(m); setIsPlaying(false); setDragPos(null); setResult(null); setSelectedId(null); setFlipped(false);
@@ -401,18 +464,27 @@ function App() {
       @keyframes ghostFade { from { opacity: 0.35; } to { opacity: 0; } }
       @keyframes ringPulse { 0% { r: 6; opacity: 0.9; } 100% { r: 11; opacity: 0; } }
       .ring-pulse { animation: ringPulse 1.1s ease-out infinite; }
-      .ball-icon { transition: x 0.7s cubic-bezier(.4,0,.2,1), y 0.7s cubic-bezier(.4,0,.2,1); }
+      .ball-wrap { transition: transform 0.9s cubic-bezier(.4,0,.2,1); }
       .ball-kick { animation: ballKick 0.4s ease-out; }
       @keyframes ballKick { 0% { font-size: 8px; } 40% { font-size: 12px; } 100% { font-size: 8px; } }
     `),
     React.createElement("div", { className: "w-full max-w-md text-center mb-5" },
-      React.createElement("p", { className: "uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1" }, "7v7 Position Guide"),
+      React.createElement("p", { className: "uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1" }, gameSize + " Position Guide"),
       React.createElement("h1", { className: "text-4xl font-black text-[#16233A] tracking-tight" }, "KNOW YOUR SPOT"),
       React.createElement("p", { className: "text-sm text-[#16233A]/70 mt-1" }, appMode === "explore" ? "Tap a player for their role. Play a phase to see the team move." : "Pick your number, then drag yourself to the right spot.")
     ),
     React.createElement("div", { className: "w-full max-w-md flex flex-col gap-2 mb-4" },
-      React.createElement("div", { className: "flex gap-2 justify-center" },
-        Object.keys(FORMATIONS).map((key) =>
+      React.createElement("div", { className: "flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10" },
+        Object.keys(GAME_SIZES).map((size) =>
+          React.createElement("button", {
+            key: size,
+            onClick: () => pickGameSize(size),
+            className: "px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition " + (gameSize === size ? "bg-[#5B8FA8] text-white" : "text-[#16233A]/60")
+          }, size)
+        )
+      ),
+      React.createElement("div", { className: "flex gap-2 justify-center", style: { flexWrap: "wrap" } },
+        Object.keys(sizeData.formations).map((key) =>
           React.createElement("button", {
             key: key,
             onClick: () => pickFormation(key),
@@ -437,7 +509,8 @@ function App() {
             className: "px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition " + (descMode === m ? "bg-[#16233A] text-white" : "text-[#16233A]/60")
           }, m === "kid" ? "Kid Mode" : "Coach Mode")
         )
-      )
+      ),
+      React.createElement("p", { className: "text-center text-xs text-[#16233A]/50 italic" }, formation.note)
     ),
     React.createElement("div", { className: "w-full max-w-md flex flex-col gap-2 mb-3" },
       React.createElement("div", { className: "grid grid-cols-4 gap-1" },
@@ -517,10 +590,15 @@ function App() {
         }),
         trails.map((t, i) => React.createElement("circle", { key: "trail-" + t.id + "-" + i, className: "ghost", cx: t.x, cy: toYs(t.y), r: "5.2", fill: "#16233A", opacity: "0.3" })),
         appMode === "test" && result === "incorrect" && viewerTarget && React.createElement("circle", { className: "ring-pulse", cx: viewerTarget.x, cy: toYs(viewerTarget.y), r: "6", fill: "none", stroke: "#1F5B3F", strokeWidth: "1" }),
-        appMode === "explore" && ballPos && React.createElement("text", {
-          className: "ball-icon" + (ballKick ? " ball-kick" : ""),
-          x: ballPos.x, y: toYs(ballPos.y) - 7, textAnchor: "middle", fontSize: "8"
-        }, "⚽"),
+        appMode === "explore" && ballPos && React.createElement("g", {
+          className: "ball-wrap",
+          style: { transform: "translate(" + ballPos.x + "px, " + (toYs(ballPos.y) - 7) + "px)" }
+        },
+          React.createElement("text", {
+            className: ballKick ? "ball-kick" : "",
+            x: "0", y: "0", textAnchor: "middle", fontSize: "8"
+          }, "⚽")
+        ),
         positioned.map((p) => {
           const isViewer = appMode === "test" && p.id === viewerId;
           const isSelected = appMode === "explore" && p.id === selectedId;
@@ -552,10 +630,10 @@ function App() {
       !selected ? React.createElement("div", { className: "flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6" },
         React.createElement("span", null, "👆"),
         React.createElement("span", null, "Tap any numbered player above to start.")
-      ) : React.createElement("div", { className: "card-flip-scene h-80" },
+      ) : React.createElement("div", { className: "card-flip-scene h-96" },
         React.createElement("div", { className: "card-flip-inner h-full " + (flipped ? "flipped" : "") },
           React.createElement("div", {
-            className: "card-face absolute inset-0 rounded-2xl p-5 flex flex-col justify-between text-white shadow-xl",
+            className: "card-face absolute inset-0 rounded-2xl p-5 flex flex-col justify-between text-white shadow-xl overflow-y-auto",
             style: { background: "linear-gradient(155deg, " + ZONE_COLOR[selectedRole.zone] + ", #16233A)" }
           },
             React.createElement("div", { className: "flex justify-between items-start" },
@@ -573,7 +651,7 @@ function App() {
             React.createElement("button", { onClick: () => setFlipped(true), className: "self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5" }, "↻ Flip card")
           ),
           React.createElement("div", {
-            className: "card-face card-face-back rounded-2xl p-5 flex flex-col justify-between text-[#16233A] shadow-xl border-2",
+            className: "card-face card-face-back rounded-2xl p-5 flex flex-col justify-between text-[#16233A] shadow-xl border-2 overflow-y-auto",
             style: { background: "#F7F5EF", borderColor: ZONE_COLOR[selectedRole.zone] }
           },
             React.createElement("div", null,
