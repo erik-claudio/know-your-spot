@@ -8,12 +8,18 @@
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin="anonymous"></script>
 <style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0;padding:0}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;-webkit-appearance:none;appearance:none}
+svg{display:block}
 .min-h-screen{min-height:100vh}
 .w-full{width:100%}
 .w-fit{width:fit-content}
 .w-10{width:2.5rem}
 .h-10{height:2.5rem}
-.h-60{height:15rem}
+.h-80{height:20rem}
 .max-w-md{max-width:28rem}
 .block{display:block}
 .flex{display:flex}
@@ -104,7 +110,6 @@
 .overflow-hidden{overflow:hidden}
 .touch-none{touch-action:none}
 .mx-auto{margin-left:auto;margin-right:auto}
-body{margin:0}
 </style>
 </head>
 <body>
@@ -130,7 +135,7 @@ const ROLES = {
 };
 
 const FORMATIONS = {
-  "2-3-1": { note: "Two at the back, three across the middle, one up top.", players: [
+  "2-3-1": { note: "The standard youth 7v7 formation — two center backs, three across midfield, one striker.", players: [
     { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
     { id: "cb1", role: "cb", number: 4, x: 35, y: 72 },
     { id: "cb2", role: "cb", number: 5, x: 65, y: 72 },
@@ -171,10 +176,42 @@ const PHASE_META = {
 };
 
 const PHASE_REASON = {
-  defend: { defense: "Stay compact and goal-side, ready to press together.", midfield: "Stay compact and goal-side, ready to press together.", attack: "Stay compact and goal-side, ready to press together." },
-  buildOut: { defense: "You spread wide to give the keeper a passing option and stretch their press.", midfield: "You drop into a pocket so the ball can bounce through you.", attack: "You stay high to pin their back line and open space in midfield." },
-  progression: { defense: "You push up to support once we're out, cutting the distance for the next pass.", midfield: "You get on the half-turn to link defense to attack.", attack: "You check short so we have an outlet as the ball comes forward." },
-  finalThird: { defense: "You overlap for an extra body wide.", midfield: "You get in behind or support the box for a cutback.", attack: "You attack the space in behind, or cut inside to shoot." },
+  defend: {
+    gk: "Stay big and organize the back line — talk your defenders through their shape.",
+    fb: "Stay compact and goal-side, ready to press together.",
+    cb: "Stay compact and goal-side, ready to press together.",
+    wm: "Stay compact and goal-side, ready to press together.",
+    cm: "Stay compact and goal-side, ready to press together.",
+    wf: "Stay compact and goal-side, ready to press together.",
+    cf: "Lead the press when the ball's close, drop to help when it's not.",
+  },
+  buildOut: {
+    gk: "You start it — first look short to a center back, or find the widest free option.",
+    fb: "You push wide onto the touchline. First read: can we go down the line to advance quickly, or turn it back inside if they press?",
+    cb: "You spread wide to open a passing lane back to the keeper, and stay calm on the ball.",
+    wm: "You drop short to offer an easy out-ball in space.",
+    cm: "You show for the ball in a pocket between their lines.",
+    wf: "You hold your width high, ready if the ball skips out to you down the line.",
+    cf: "You stay high to pin their back line and open space in midfield.",
+  },
+  progression: {
+    gk: "You step up slightly and stay ready as a passing option if we need to recycle.",
+    fb: "You carry the ball forward, or find the winger down the line to advance quickly.",
+    cb: "You push into midfield space now that we're out, offering the next pass.",
+    wm: "You get on the half-turn, scanning to play forward.",
+    cm: "You link the play, deciding whether to go forward or switch the point of attack.",
+    wf: "You check to the ball to receive and combine.",
+    cf: "You drop short to link play, or spin in behind if the ball's played early.",
+  },
+  finalThird: {
+    gk: "You stay alert for a long ball over the top if we lose possession.",
+    fb: "You overlap down the line for an extra body wide and a cutback option.",
+    cb: "You hold your position centrally in case we lose the ball.",
+    wm: "You get forward to support the attack, staying ready to track back.",
+    cm: "You arrive late into the box for a cutback or rebound.",
+    wf: "You attack the space in behind, or cut inside to shoot.",
+    cf: "You attack the near or far post, timing your run to beat the last defender.",
+  },
 };
 
 const PHASE_ADJUST = {
@@ -223,6 +260,12 @@ function getArrows(phase, players) {
   return [];
 }
 
+function getBallHolder(phase, arrows, gkId) {
+  if (phase === "defend") return gkId;
+  if (arrows.length > 0) return arrows[0][1];
+  return gkId;
+}
+
 function playTone(freq, duration) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -256,6 +299,7 @@ function App() {
   const [dragging, setDragging] = useState(false);
   const [result, setResult] = useState(null);
   const [trails, setTrails] = useState([]);
+  const [ballKick, setBallKick] = useState(false);
   const svgRef = useRef(null);
 
   const phase = PHASE_ORDER[phaseIndex];
@@ -269,11 +313,17 @@ function App() {
   const viewerPlayer = formation.players.find((p) => p.id === viewerId) || null;
   const viewerTarget = viewerPlayer ? posMap[viewerPlayer.id] : null;
 
+  const gkId = useMemo(() => { const gk = formation.players.find((p) => p.role === "gk"); return gk ? gk.id : null; }, [formation]);
+  const ballHolderId = useMemo(() => getBallHolder(phase, arrows, gkId), [phase, arrows, gkId]);
+  const ballPos = posMap[ballHolderId] || posMap[gkId];
+
   useEffect(() => {
     if (!isPlaying) return;
     const id = setInterval(() => {
       setTrails(positioned.map((p) => ({ id: p.id, x: p.pos.x, y: p.pos.y })));
       setTimeout(() => setTrails([]), 850);
+      setBallKick(true);
+      setTimeout(() => setBallKick(false), 400);
       setPhaseIndex((i) => (i + 1) % PHASE_ORDER.length);
     }, 2400);
     return () => clearInterval(id);
@@ -283,7 +333,7 @@ function App() {
 
   function resetAll() {
     setSelectedId(null); setFlipped(false); setPhaseIndex(0); setIsPlaying(false);
-    setViewerId(null); setDragPos(null); setDragging(false); setResult(null); setTrails([]);
+    setViewerId(null); setDragPos(null); setDragging(false); setResult(null); setTrails([]); setBallKick(false);
   }
 
   function switchAppMode(m) {
@@ -293,6 +343,8 @@ function App() {
   function goToPhase(i) {
     setTrails(positioned.map((p) => ({ id: p.id, x: p.pos.x, y: p.pos.y })));
     setTimeout(() => setTrails([]), 850);
+    setBallKick(true);
+    setTimeout(() => setBallKick(false), 400);
     setPhaseIndex(i); setIsPlaying(false); setDragPos(null); setResult(null);
   }
 
@@ -349,6 +401,9 @@ function App() {
       @keyframes ghostFade { from { opacity: 0.35; } to { opacity: 0; } }
       @keyframes ringPulse { 0% { r: 6; opacity: 0.9; } 100% { r: 11; opacity: 0; } }
       .ring-pulse { animation: ringPulse 1.1s ease-out infinite; }
+      .ball-icon { transition: x 0.7s cubic-bezier(.4,0,.2,1), y 0.7s cubic-bezier(.4,0,.2,1); }
+      .ball-kick { animation: ballKick 0.4s ease-out; }
+      @keyframes ballKick { 0% { font-size: 8px; } 40% { font-size: 12px; } 100% { font-size: 8px; } }
     `),
     React.createElement("div", { className: "w-full max-w-md text-center mb-5" },
       React.createElement("p", { className: "uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1" }, "7v7 Position Guide"),
@@ -462,6 +517,10 @@ function App() {
         }),
         trails.map((t, i) => React.createElement("circle", { key: "trail-" + t.id + "-" + i, className: "ghost", cx: t.x, cy: toYs(t.y), r: "5.2", fill: "#16233A", opacity: "0.3" })),
         appMode === "test" && result === "incorrect" && viewerTarget && React.createElement("circle", { className: "ring-pulse", cx: viewerTarget.x, cy: toYs(viewerTarget.y), r: "6", fill: "none", stroke: "#1F5B3F", strokeWidth: "1" }),
+        appMode === "explore" && ballPos && React.createElement("text", {
+          className: "ball-icon" + (ballKick ? " ball-kick" : ""),
+          x: ballPos.x, y: toYs(ballPos.y) - 7, textAnchor: "middle", fontSize: "8"
+        }, "⚽"),
         positioned.map((p) => {
           const isViewer = appMode === "test" && p.id === viewerId;
           const isSelected = appMode === "explore" && p.id === selectedId;
@@ -493,7 +552,7 @@ function App() {
       !selected ? React.createElement("div", { className: "flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6" },
         React.createElement("span", null, "👆"),
         React.createElement("span", null, "Tap any numbered player above to start.")
-      ) : React.createElement("div", { className: "card-flip-scene h-60" },
+      ) : React.createElement("div", { className: "card-flip-scene h-80" },
         React.createElement("div", { className: "card-flip-inner h-full " + (flipped ? "flipped" : "") },
           React.createElement("div", {
             className: "card-face absolute inset-0 rounded-2xl p-5 flex flex-col justify-between text-white shadow-xl",
@@ -509,7 +568,7 @@ function App() {
             React.createElement("div", { className: "space-y-2" },
               React.createElement("p", { className: "text-sm leading-snug" }, descMode === "kid" ? selectedRole.kidDesc : selectedRole.coachNote),
               React.createElement("p", { className: "text-sm leading-snug font-medium" }, descMode === "kid" ? selectedRole.kidJob : selectedRole.watchFor),
-              React.createElement("p", { className: "text-xs leading-snug italic opacity-80 border-t border-white/20 pt-2" }, "Right now: " + PHASE_REASON[phase][selectedRole.zone])
+              React.createElement("p", { className: "text-xs leading-snug italic opacity-80 border-t border-white/20 pt-2" }, "Right now: " + PHASE_REASON[phase][selected.role])
             ),
             React.createElement("button", { onClick: () => setFlipped(true), className: "self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5" }, "↻ Flip card")
           ),
