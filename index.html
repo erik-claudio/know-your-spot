@@ -10,6 +10,13 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
+<script>
+window.onerror = function(msg, url, line, col, error) {
+  document.body.innerHTML = '<pre style="white-space:pre-wrap;padding:20px;color:red;font-size:14px;">Error: ' + msg + '\nLine: ' + line + '</pre>';
+  return true;
+};
+</script>
+
 <div id="app"></div>
 
 <script type="text/babel" data-presets="react">
