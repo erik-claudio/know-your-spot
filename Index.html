@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Know Your Spot — 7v7 Position Guide</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect, useRef } = React;
+
+const ROLES = {
+  gk: { label: "Goalkeeper", kidDesc: "You're the last defender and the first attacker.", kidJob: "Guard the goal, catch or punch crosses, and start plays with a good throw or kick.", watchFor: "Stay big, stay balanced — come out for crosses only if you can win them clean.", coachNote: "Sets the defensive line height and organizes the back line vocally.", zone: "defense" },
+  fb: { label: "Fullback", kidDesc: "You guard your side of the field, end to end.", kidJob: "Stop attackers from getting past you, then push up to support the attack.", watchFor: "Don't get pulled too far infield — keep your shape wide.", coachNote: "Provides width in the final third and tracks the opposing wide player.", zone: "defense" },
+  cb: { label: "Center Back", kidDesc: "You protect the middle right in front of your goalkeeper.", kidJob: "Win the ball, clear danger, and talk to your teammates.", watchFor: "Stay goal-side of the striker you're marking.", coachNote: "Reads through-balls, steps to intercept, and covers for the fullbacks.", zone: "defense" },
+  wm: { label: "Wide Midfielder", kidDesc: "You run the touchline, both defending and attacking.", kidJob: "Track back to help defend, then sprint forward to create width.", watchFor: "Time your runs so you're not caught upfield.", coachNote: "Box-to-box on the flank — the link between fullback and forward.", zone: "midfield" },
+  cm: { label: "Center Midfielder", kidDesc: "You're the engine of the team.", kidJob: "Get on the ball, look up, and decide: pass forward or keep it safe?", watchFor: "Always know where your next pass is going before it arrives.", coachNote: "Controls tempo, shields the back line, and links defense to attack.", zone: "midfield" },
+  wf: { label: "Wide Forward", kidDesc: "You stretch the field wide, then cut inside.", kidJob: "Beat your defender for pace, then shoot or cross.", watchFor: "Check your shoulder before the ball arrives.", coachNote: "Provides width in attack and tucks in to combine centrally.", zone: "attack" },
+  cf: { label: "Center Forward", kidDesc: "You're the team's main goal-scoring threat.", kidJob: "Hold up the ball, make runs behind the defense, finish your chances.", watchFor: "Time runs to beat the offside line, not before.", coachNote: "Leads the press, occupies center backs, and finishes chances.", zone: "attack" },
+};
+
+const FORMATIONS = {
+  "2-3-1": { note: "Two at the back, three across the middle, one up top.", players: [
+    { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+    { id: "cb1", role: "cb", number: 4, x: 35, y: 72 },
+    { id: "cb2", role: "cb", number: 5, x: 65, y: 72 },
+    { id: "lm", role: "wm", number: 6, x: 20, y: 46 },
+    { id: "cm", role: "cm", number: 8, x: 50, y: 48 },
+    { id: "rm", role: "wm", number: 7, x: 80, y: 46 },
+    { id: "cf", role: "cf", number: 9, x: 50, y: 16 },
+  ]},
+  "3-2-1": { note: "Solid back three, narrow midfield pair, lone striker.", players: [
+    { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+    { id: "lb", role: "fb", number: 3, x: 22, y: 70 },
+    { id: "cb", role: "cb", number: 4, x: 50, y: 74 },
+    { id: "rb", role: "fb", number: 2, x: 78, y: 70 },
+    { id: "lm", role: "cm", number: 6, x: 35, y: 44 },
+    { id: "rm", role: "cm", number: 8, x: 65, y: 44 },
+    { id: "cf", role: "cf", number: 9, x: 50, y: 16 },
+  ]},
+  "2-2-2": { note: "Even spacing top to bottom — easy shape for kids to learn.", players: [
+    { id: "gk", role: "gk", number: 1, x: 50, y: 90 },
+    { id: "cb1", role: "cb", number: 4, x: 32, y: 74 },
+    { id: "cb2", role: "cb", number: 5, x: 68, y: 74 },
+    { id: "lm", role: "cm", number: 6, x: 30, y: 46 },
+    { id: "rm", role: "cm", number: 8, x: 70, y: 46 },
+    { id: "lf", role: "wf", number: 9, x: 32, y: 18 },
+    { id: "rf", role: "wf", number: 10, x: 68, y: 18 },
+  ]},
+};
+
+const ZONE_COLOR = { defense: "#5B8FA8", midfield: "#E8A93A", attack: "#C75B39" };
+const ZONE_LABEL = { defense: "Defense", midfield: "Midfield", attack: "Attack" };
+
+const PHASE_ORDER = ["defend", "buildOut", "progression", "finalThird"];
+const PHASE_META = {
+  defend: { label: "Defending", desc: "Compact shape, ready to press or drop." },
+  buildOut: { label: "Build Out", desc: "Keeper has the ball — spread wide, offer safe passing lines." },
+  progression: { label: "Progress", desc: "Move the ball through midfield as a unit." },
+  finalThird: { label: "Final Third", desc: "Wide players cut inside, fullbacks overlap for width." },
+};
+
+const PHASE_REASON = {
+  defend: { defense: "Stay compact and goal-side, ready to press together.", midfield: "Stay compact and goal-side, ready to press together.", attack: "Stay compact and goal-side, ready to press together." },
+  buildOut: { defense: "You spread wide to give the keeper a passing option and stretch their press.", midfield: "You drop into a pocket so the ball can bounce through you.", attack: "You stay high to pin their back line and open space in midfield." },
+  progression: { defense: "You push up to support once we're out, cutting the distance for the next pass.", midfield: "You get on the half-turn to link defense to attack.", attack: "You check short so we have an outlet as the ball comes forward." },
+  finalThird: { defense: "You overlap for an extra body wide.", midfield: "You get in behind or support the box for a cutback.", attack: "You attack the space in behind, or cut inside to shoot." },
+};
+
+const PHASE_ADJUST = {
+  buildOut: { gk: { dx: 0, dy: 0 }, fb: { dx: (x) => (x < 50 ? -6 : 6), dy: -14 }, cb: { dx: (x) => (x < 50 ? -8 : 8), dy: -6 }, wm: { dx: 0, dy: -10 }, cm: { dx: 0, dy: -8 }, wf: { dx: 0, dy: -2 }, cf: { dx: 0, dy: -2 } },
+  progression: { gk: { dx: 0, dy: 0 }, fb: { dx: (x) => (x < 50 ? -10 : 10), dy: -26 }, cb: { dx: (x) => (x < 50 ? -4 : 4), dy: -14 }, wm: { dx: (x) => (x < 50 ? -4 : 4), dy: -24 }, cm: { dx: 0, dy: -20 }, wf: { dx: 0, dy: -8 }, cf: { dx: 0, dy: -6 } },
+  finalThird: { gk: { dx: 0, dy: -4 }, fb: { dx: (x) => (x < 50 ? -6 : 6), dy: -40 }, cb: { dx: (x) => (x < 50 ? -2 : 2), dy: -22 }, wm: { dx: (x) => (x < 50 ? 8 : -8), dy: -38 }, cm: { dx: 0, dy: -32 }, wf: { dx: (x) => (x < 50 ? 6 : -6), dy: -14 }, cf: { dx: 0, dy: -10 } },
+};
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+function phasePosition(player, phase) {
+  if (phase === "defend") return { x: player.x, y: player.y };
+  const adj = (PHASE_ADJUST[phase] && PHASE_ADJUST[phase][player.role]) || { dx: 0, dy: 0 };
+  const dx = typeof adj.dx === "function" ? adj.dx(player.x) : adj.dx;
+  const x = clamp(player.x + dx, 8, 92);
+  const y = clamp(player.y + adj.dy, 5, 96);
+  return { x, y };
+}
+
+function getArrows(phase, players) {
+  const byZone = (zone) => players.filter((p) => ROLES[p.role].zone === zone);
+  if (phase === "defend") return [];
+  if (phase === "buildOut") {
+    const gk = players.find((p) => p.role === "gk");
+    if (!gk) return [];
+    return byZone("defense").filter((p) => p.role !== "gk").map((p) => [gk.id, p.id]);
+  }
+  if (phase === "progression") {
+    const defenders = byZone("defense").filter((p) => p.role !== "gk");
+    const mids = byZone("midfield");
+    if (!mids.length) return [];
+    return defenders.map((d) => {
+      const nearest = mids.reduce((a, b) => (Math.abs(b.x - d.x) < Math.abs(a.x - d.x) ? b : a));
+      return [d.id, nearest.id];
+    });
+  }
+  if (phase === "finalThird") {
+    const mids = byZone("midfield");
+    const forwards = byZone("attack");
+    if (!forwards.length) return [];
+    return mids.map((m) => {
+      const nearest = forwards.reduce((a, b) => (Math.abs(b.x - m.x) < Math.abs(a.x - m.x) ? b : a));
+      return [m.id, nearest.id];
+    });
+  }
+  return [];
+}
+
+function playTone(freq, duration) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration / 1000);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration / 1000);
+  } catch (e) {}
+}
+
+function buzz(pattern) {
+  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+}
+
+function App() {
+  const [formationKey, setFormationKey] = useState("2-3-1");
+  const [descMode, setDescMode] = useState("kid");
+  const [appMode, setAppMode] = useState("explore");
+  const [selectedId, setSelectedId] = useState(null);
+  const [flipped, setFlipped] = useState(false);
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [viewerId, setViewerId] = useState(null);
+  const [dragPos, setDragPos] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const [result, setResult] = useState(null);
+  const [trails, setTrails] = useState([]);
+  const svgRef = useRef(null);
+
+  const phase = PHASE_ORDER[phaseIndex];
+  const formation = FORMATIONS[formationKey];
+  const selected = useMemo(() => formation.players.find((p) => p.id === selectedId) || null, [formation, selectedId]);
+  const selectedRole = selected ? ROLES[selected.role] : null;
+
+  const positioned = useMemo(() => formation.players.map((p) => ({ ...p, pos: phasePosition(p, phase) })), [formation, phase]);
+  const posMap = useMemo(() => { const m = {}; positioned.forEach((p) => (m[p.id] = p.pos)); return m; }, [positioned]);
+  const arrows = useMemo(() => getArrows(phase, formation.players), [phase, formation]);
+  const viewerPlayer = formation.players.find((p) => p.id === viewerId) || null;
+  const viewerTarget = viewerPlayer ? posMap[viewerPlayer.id] : null;
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const id = setInterval(() => {
+      setTrails(positioned.map((p) => ({ id: p.id, x: p.pos.x, y: p.pos.y })));
+      setTimeout(() => setTrails([]), 850);
+      setPhaseIndex((i) => (i + 1) % PHASE_ORDER.length);
+    }, 2400);
+    return () => clearInterval(id);
+  }, [isPlaying, positioned]);
+
+  function pickFormation(key) { setFormationKey(key); resetAll(); }
+
+  function resetAll() {
+    setSelectedId(null); setFlipped(false); setPhaseIndex(0); setIsPlaying(false);
+    setViewerId(null); setDragPos(null); setDragging(false); setResult(null); setTrails([]);
+  }
+
+  function switchAppMode(m) {
+    setAppMode(m); setIsPlaying(false); setDragPos(null); setResult(null); setSelectedId(null); setFlipped(false);
+  }
+
+  function goToPhase(i) {
+    setTrails(positioned.map((p) => ({ id: p.id, x: p.pos.x, y: p.pos.y })));
+    setTimeout(() => setTrails([]), 850);
+    setPhaseIndex(i); setIsPlaying(false); setDragPos(null); setResult(null);
+  }
+
+  function tapPlayer(id) {
+    if (appMode !== "explore") return;
+    if (id === selectedId) { setFlipped((f) => !f); } else { setSelectedId(id); setFlipped(false); }
+  }
+
+  function toYs(y) { return (y / 100) * 132; }
+
+  function clientToSvg(clientX, clientY) {
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = clamp(((clientX - rect.left) / rect.width) * 100, 0, 100);
+    const y = clamp(((clientY - rect.top) / rect.height) * 132, 0, 132);
+    return { x, y };
+  }
+
+  function onDragStart(e) {
+    if (appMode !== "test" || !viewerPlayer) return;
+    e.target.setPointerCapture(e.pointerId);
+    setDragging(true); setResult(null);
+    setDragPos(clientToSvg(e.clientX, e.clientY));
+  }
+
+  function onDragMove(e) { if (!dragging) return; setDragPos(clientToSvg(e.clientX, e.clientY)); }
+
+  function onDragEnd() {
+    if (!dragging || !viewerTarget) return;
+    setDragging(false);
+    const targetX = viewerTarget.x;
+    const targetY = toYs(viewerTarget.y);
+    const dist = Math.hypot((dragPos?.x ?? 0) - targetX, (dragPos?.y ?? 0) - targetY);
+    if (dist <= 9) {
+      setResult("correct"); playTone(880, 180); buzz([40]);
+      setTimeout(() => { setDragPos(null); setResult(null); }, 1400);
+    } else {
+      setResult("incorrect"); playTone(220, 220); buzz([30, 40, 30]);
+    }
+  }
+
+  const viewerNumbers = formation.players.map((p) => p.number);
+
+  return (
+    <div className="min-h-screen w-full bg-[#F7F5EF] flex flex-col items-center px-4 py-8">
+      <style>{`
+        .card-flip-scene { perspective: 1200px; }
+        .card-flip-inner { position: relative; width: 100%; transition: transform 0.55s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+        .card-flip-inner.flipped { transform: rotateY(180deg); }
+        .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .card-face-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+        .player-dot { transition: cx 0.7s cubic-bezier(.4,0,.2,1), cy 0.7s cubic-bezier(.4,0,.2,1), r 0.25s ease; }
+        .player-label { transition: x 0.7s cubic-bezier(.4,0,.2,1), y 0.7s cubic-bezier(.4,0,.2,1); }
+        .pass-line { transition: x1 0.7s cubic-bezier(.4,0,.2,1), y1 0.7s cubic-bezier(.4,0,.2,1), x2 0.7s cubic-bezier(.4,0,.2,1), y2 0.7s cubic-bezier(.4,0,.2,1); }
+        .ghost { animation: ghostFade 0.85s ease-out forwards; }
+        @keyframes ghostFade { from { opacity: 0.35; } to { opacity: 0; } }
+        @keyframes ringPulse { 0% { r: 6; opacity: 0.9; } 100% { r: 11; opacity: 0; } }
+        .ring-pulse { animation: ringPulse 1.1s ease-out infinite; }
+      `}</style>
+
+      <div className="w-full max-w-md text-center mb-5">
+        <p className="uppercase tracking-[0.25em] text-xs text-[#5B8FA8] font-bold mb-1">7v7 Position Guide</p>
+        <h1 className="text-4xl font-black text-[#16233A] tracking-tight">KNOW YOUR SPOT</h1>
+        <p className="text-sm text-[#16233A]/70 mt-1">
+          {appMode === "explore" ? "Tap a player for their role. Play a phase to see the team move." : "Pick your number, then drag yourself to the right spot."}
+        </p>
+      </div>
+
+      <div className="w-full max-w-md flex flex-col gap-2 mb-4">
+        <div className="flex gap-2 justify-center">
+          {Object.keys(FORMATIONS).map((key) => (
+            <button key={key} onClick={() => pickFormation(key)} className={`px-3 py-1.5 rounded-full text-sm font-bold tracking-wide transition ${formationKey === key ? "bg-[#16233A] text-[#F7F5EF]" : "bg-white text-[#16233A] border border-[#16233A]/15"}`}>{key}</button>
+          ))}
+        </div>
+        <div className="flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10">
+          {["explore", "test"].map((m) => (
+            <button key={m} onClick={() => switchAppMode(m)} className={`px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition ${appMode === m ? "bg-[#C75B39] text-white" : "text-[#16233A]/60"}`}>{m === "explore" ? "Explore" : "Test Me"}</button>
+          ))}
+        </div>
+        {appMode === "explore" && (
+          <div className="flex justify-center gap-1 bg-white rounded-full p-1 w-fit mx-auto border border-[#16233A]/10">
+            {["kid", "coach"].map((m) => (
+              <button key={m} onClick={() => setDescMode(m)} className={`px-4 py-1 rounded-full text-xs font-semibold uppercase tracking-wide transition ${descMode === m ? "bg-[#16233A] text-white" : "text-[#16233A]/60"}`}>{m === "kid" ? "Kid Mode" : "Coach Mode"}</button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="w-full max-w-md flex flex-col gap-2 mb-3">
+        <div className="grid grid-cols-4 gap-1">
+          {PHASE_ORDER.map((p, i) => (
+            <button key={p} onClick={() => goToPhase(i)} className={`py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-tight transition ${phase === p ? "bg-[#C75B39] text-white" : "bg-white text-[#16233A]/60 border border-[#16233A]/10"}`}>{PHASE_META[p].label}</button>
+          ))}
+        </div>
+        {appMode === "explore" && (
+          <div className="flex items-center gap-2 justify-center">
+            <button onClick={() => setIsPlaying((v) => !v)} className="text-xs font-bold uppercase tracking-wide bg-[#16233A] text-white rounded-full px-4 py-1.5">{isPlaying ? "⏸ Pause" : "▶ Play phases"}</button>
+          </div>
+        )}
+        <p className="text-center text-xs text-[#16233A]/50 italic">{PHASE_META[phase].desc}</p>
+      </div>
+
+      {appMode === "test" && !viewerId && (
+        <div className="w-full max-w-md bg-white rounded-2xl p-4 mb-3 border border-[#16233A]/10 text-center">
+          <p className="text-sm font-semibold text-[#16233A] mb-2">Which number are you?</p>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {viewerNumbers.map((num) => {
+              const p = formation.players.find((pl) => pl.number === num);
+              return (<button key={num} onClick={() => setViewerId(p.id)} className="w-10 h-10 rounded-full bg-[#16233A] text-white font-black">{num}</button>);
+            })}
+          </div>
+        </div>
+      )}
+
+      {appMode === "test" && viewerId && result && (
+        <div className={`w-full max-w-md rounded-xl p-2 mb-2 text-center text-sm font-bold ${result === "correct" ? "bg-[#1F5B3F]/10 text-[#1F5B3F]" : "bg-[#C75B39]/10 text-[#C75B39]"}`}>
+          {result === "correct" ? "✅ That's it! Great spot." : "Not quite — follow the glowing ring."}
+        </div>
+      )}
+
+      <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-lg border-4 border-[#16233A]/10">
+        <svg ref={svgRef} viewBox="0 0 100 132" className="w-full block touch-none" onPointerMove={onDragMove} onPointerUp={onDragEnd}>
+          <defs>
+            <marker id="arrowhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
+              <path d="M0,0 L4,2 L0,4 Z" fill="#16233A" opacity="0.55" />
+            </marker>
+          </defs>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <rect key={i} x="0" y={i * 16.5} width="100" height="16.5" fill={i % 2 === 0 ? "#1F5B3F" : "#255E45"} />
+          ))}
+          {[{ zone: "attack", y0: 0, y1: 44 }, { zone: "midfield", y0: 44, y1: 88 }, { zone: "defense", y0: 88, y1: 132 }].map(({ zone, y0, y1 }) => (
+            <rect key={zone} x="0" y={y0} width="100" height={y1 - y0} fill={ZONE_COLOR[zone]} opacity={selectedRole ? (selectedRole.zone === zone ? 0.2 : 0.03) : 0.07} style={{ transition: "opacity 0.35s" }} />
+          ))}
+          <g stroke="#F7F5EF" strokeWidth="0.6" fill="none" opacity="0.85">
+            <rect x="4" y="4" width="92" height="124" />
+            <line x1="4" y1="66" x2="96" y2="66" />
+            <circle cx="50" cy="66" r="11" />
+            <circle cx="50" cy="66" r="0.8" fill="#F7F5EF" />
+            <rect x="26" y="4" width="48" height="18" />
+            <rect x="38" y="4" width="24" height="8" />
+            <rect x="26" y="110" width="48" height="18" />
+            <rect x="38" y="120" width="24" height="8" />
+          </g>
+          {appMode === "explore" && arrows.map(([fromId, toId], i) => {
+            const a = posMap[fromId]; const b = posMap[toId];
+            if (!a || !b) return null;
+            return (<line key={i} className="pass-line" x1={a.x} y1={toYs(a.y)} x2={b.x} y2={toYs(b.y)} stroke="#16233A" strokeWidth="0.7" strokeDasharray="2,1.5" opacity="0.45" markerEnd="url(#arrowhead)" />);
+          })}
+          {trails.map((t, i) => (<circle key={`trail-${t.id}-${i}`} className="ghost" cx={t.x} cy={toYs(t.y)} r="5.2" fill="#16233A" opacity="0.3" />))}
+          {appMode === "test" && result === "incorrect" && viewerTarget && (
+            <circle className="ring-pulse" cx={viewerTarget.x} cy={toYs(viewerTarget.y)} r="6" fill="none" stroke="#1F5B3F" strokeWidth="1" />
+          )}
+          {positioned.map((p) => {
+            const isViewer = appMode === "test" && p.id === viewerId;
+            const isSelected = appMode === "explore" && p.id === selectedId;
+            let cx = p.pos.x; let cy = toYs(p.pos.y);
+            if (isViewer && dragPos) { cx = dragPos.x; cy = dragPos.y; }
+            return (
+              <g key={p.id} onClick={() => tapPlayer(p.id)} onPointerDown={isViewer ? onDragStart : undefined} style={{ cursor: appMode === "explore" ? "pointer" : isViewer ? "grab" : "default" }}>
+                <circle className={isViewer && dragging ? "" : "player-dot"} cx={cx} cy={cy} r={isSelected || isViewer ? 6.4 : 5.2} fill={result === "correct" && isViewer ? "#1F5B3F" : isSelected || isViewer ? "#C75B39" : "#F7F5EF"} stroke={isSelected || isViewer ? "#F7F5EF" : "#16233A"} strokeWidth={isSelected || isViewer ? 1.1 : 0.6} />
+                <text className={isViewer && dragging ? "" : "player-label"} x={cx} y={cy + 1.6} textAnchor="middle" fontSize="5" fontWeight="700" fill={isSelected || isViewer ? "#F7F5EF" : "#16233A"}>{p.number}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {appMode === "explore" && (
+        <div className="w-full max-w-md mt-5">
+          {!selected ? (
+            <div className="flex items-center gap-2 justify-center text-[#16233A]/50 text-sm py-6"><span>👆</span><span>Tap any numbered player above to start.</span></div>
+          ) : (
+            <div className="card-flip-scene h-60">
+              <div className={`card-flip-inner h-full ${flipped ? "flipped" : ""}`}>
+                <div className="card-face absolute inset-0 rounded-2xl p-5 flex flex-col justify-between text-white shadow-xl" style={{ background: `linear-gradient(155deg, ${ZONE_COLOR[selectedRole.zone]}, #16233A)` }}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="uppercase text-xs tracking-[0.2em] opacity-70">{ZONE_LABEL[selectedRole.zone]}</p>
+                      <h2 className="text-2xl font-black tracking-tight">{selectedRole.label}</h2>
+                    </div>
+                    <span className="text-4xl font-black opacity-80">#{selected.number}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm leading-snug">{descMode === "kid" ? selectedRole.kidDesc : selectedRole.coachNote}</p>
+                    <p className="text-sm leading-snug font-medium">{descMode === "kid" ? selectedRole.kidJob : selectedRole.watchFor}</p>
+                    <p className="text-xs leading-snug italic opacity-80 border-t border-white/20 pt-2">Right now: {PHASE_REASON[phase][selectedRole.zone]}</p>
+                  </div>
+                  <button onClick={() => setFlipped(true)} className="self-start text-xs uppercase tracking-wide bg-white/15 rounded-full px-3 py-1.5">↻ Flip card</button>
+                </div>
+                <div className="card-face card-face-back rounded-2xl p-5 flex flex-col justify-between text-[#16233A] shadow-xl border-2" style={{ background: "#F7F5EF", borderColor: ZONE_COLOR[selectedRole.zone] }}>
+                  <div>
+                    <p className="uppercase text-xs tracking-[0.2em] opacity-60">Watch for</p>
+                    <p className="text-base font-semibold leading-snug mt-1">{selectedRole.watchFor}</p>
+                  </div>
+                  <div className="text-xs text-[#16233A]/60 space-y-0.5">
+                    <p>Formation: {formationKey}</p>
+                    <p>Zone: {ZONE_LABEL[selectedRole.zone]}</p>
+                    <p>Jersey #{selected.number}</p>
+                  </div>
+                  <button onClick={() => setFlipped(false)} className="self-start text-xs uppercase tracking-wide bg-[#16233A]/10 rounded-full px-3 py-1.5">↻ Back</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(<App />);
+</script>
+</body>
+</html>
